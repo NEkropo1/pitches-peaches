@@ -1,0 +1,69 @@
+{
+  "_comment": "Fixture CV for the end-to-end test. Invented person, realistic shape. Deliberately contains one internal inconsistency (see `experience` vs the project durations) so the profile stage's proofreading has something to find.",
+  "firstname": "Dana",
+  "lastname": "Whitfield",
+  "position": "Senior Backend Engineer | Python | Go | Kubernetes | AWS",
+  "experience": "8+ years in software development, backend and platform engineering",
+  "english": "Native",
+  "location": "Lisbon, Portugal (remote)",
+  "linkedIn": "https://www.linkedin.com/in/example-not-a-real-profile",
+  "tech_summary": {
+    "Programming languages": "Python, Go, TypeScript, Bash, SQL",
+    "Backend technologies": "FastAPI, Flask, SQLAlchemy, Celery, gRPC",
+    "Cloud platforms": "AWS (EKS, S3, RDS, Lambda, SQS), GCP (GKE, Pub/Sub)",
+    "Databases": "PostgreSQL, Redis, ClickHouse, Elasticsearch",
+    "Devops": "Kubernetes, Docker, Terraform, Nginx, GitHub Actions, ArgoCD",
+    "Observability": "Prometheus, Grafana, OpenTelemetry, Sentry",
+    "Frontend frameworks": "React (basic)",
+    "Other": "Distributed systems, API design, multi-tenancy, incident response, static analysis (some exposure via linter tooling)"
+  },
+  "education": {
+    "place": "University of Edinburgh",
+    "degree": "BSc Computer Science"
+  },
+  "projects": [
+    {
+      "name": "Multi-tenant CI analytics platform",
+      "position": "Senior Backend Engineer, then Tech Lead",
+      "duration": "3 years (2022–2025)",
+      "team_size": "6 engineers, 1 PM",
+      "country": "Portugal / remote",
+      "description": "Owned the ingestion and query platform that processed build and test telemetry for around 400 customer organisations. Inherited a single-tenant Django monolith and moved it to a multi-tenant service on self-managed Kubernetes. Cut p99 query latency from 4.2 seconds to 380 milliseconds by restructuring the storage layer around ClickHouse while keeping PostgreSQL for everything transactional.",
+      "stack": "Python, FastAPI, PostgreSQL, ClickHouse, Redis, Kubernetes, Terraform, AWS",
+      "responsibilities": [
+        "Designed the tenant isolation model and the migration path off the shared schema",
+        "Chose PostgreSQL over a faster columnar store for the transactional path, for maintainability and hiring reasons",
+        "Ran the on-call rotation and wrote the runbooks after two multi-tenant data-leak near-misses",
+        "Introduced OpenTelemetry tracing before the migration, which is the only reason the cutover was debuggable",
+        "Reduced monthly infrastructure spend by 38% by right-sizing node pools and moving cold telemetry to S3"
+      ]
+    },
+    {
+      "name": "Developer tooling and pre-commit static analysis",
+      "position": "Backend Engineer",
+      "duration": "1.5 years (2020–2022)",
+      "team_size": "3 engineers",
+      "country": "United Kingdom",
+      "description": "Built and maintained the internal linting and pre-commit tooling used across roughly 120 repositories. Wrote custom AST-based rules in Python to catch unsafe database access patterns before review, and drove the false-positive rate down from 31% to under 6% over two quarters, which is what finally got engineers to stop disabling it.",
+      "stack": "Python, libcst, pre-commit, GitHub Actions, Docker",
+      "responsibilities": [
+        "Authored custom AST rules and the framework other teams extended",
+        "Instrumented rule hit rates so noisy rules could be found and retired",
+        "Ran the rollout across teams, including the part where people hated it"
+      ]
+    },
+    {
+      "name": "Payments reconciliation service",
+      "position": "Backend Engineer",
+      "duration": "2 years (2018–2020)",
+      "team_size": "9 engineers",
+      "country": "United Kingdom",
+      "description": "Rebuilt the nightly reconciliation job as an event-driven service. Introduced idempotency keys after a retry storm double-charged 1,900 accounts, and that invariant is still the thing I check for first in any pipeline that touches money.",
+      "stack": "Python, Celery, PostgreSQL, RabbitMQ, AWS SQS",
+      "responsibilities": [
+        "Designed the idempotent write path and the replay tooling",
+        "Wrote the postmortem and the guardrails that followed it"
+      ]
+    }
+  ]
+}

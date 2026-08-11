@@ -26,9 +26,19 @@ def test_fixture_is_a_valid_match(match):
 
 
 def test_every_surface_carries_the_banner(match):
-    assert BANNER in "\n".join(terminal_lines(match))
+    # The terminal surface wraps it, so compare on collapsed whitespace.
+    terminal = re.sub(r"\s+", " ", "\n".join(terminal_lines(match)))
+    assert BANNER in terminal
     assert BANNER in markdown(match)
     assert BANNER in html_card(match)
+
+
+def test_terminal_card_is_width_bounded(match):
+    """It gets screenshotted and pasted, so it must not depend on the terminal."""
+    match.dimensions[0].reasoning = "word " * 120
+    match.gaps[0].detail = "detail " * 80
+    for line in terminal_lines(match, role="A very long role title", company="Co"):
+        assert len(line) <= 92, f"line ran past the fixed width: {line[:60]!r}"
 
 
 def test_banner_says_it_never_applies_to_anything(match):

@@ -54,7 +54,7 @@ def terminal_lines(match: Match, *, role: str = "", company: str = "") -> list[s
     head = " — ".join(p for p in (role, company) if p)
     if head:
         out += [head, ""]
-    out.append(BANNER)
+    out += _wrap(BANNER, indent="")
     out.append("")
 
     label = BAND_WORDS[match.band]
@@ -66,37 +66,45 @@ def terminal_lines(match: Match, *, role: str = "", company: str = "") -> list[s
 
     for dim in _ordered(match):
         out.append(f"  {DIMENSION_LABELS[dim.name]:<17}{dim.score:>3}  {_bar(dim.score)}")
-        out.append(f"  {'':<17}     {dim.reasoning}")
+        out += _wrap(dim.reasoning, indent=" " * 24)
         out.append("")
 
     out.append("WHY YOU FIT — WITH EVIDENCE")
     out.append("")
     for point in match.fit_points:
-        out.append(f"  {point.statement}")
-        for line in _wrap_quote(point.quote):
-            out.append(f"      {line}")
+        out += _wrap(point.statement, indent="  ")
+        out += _wrap(f'"{point.quote}"', indent="      ")
         out.append(f"      claim: {point.claim}")
         out.append("")
 
     out.append("GAPS")
     out.append("")
     for gap in match.gaps:
-        out.append(f"  {gap.headline}")
-        out.append(f"      {gap.detail}")
+        out += _wrap(gap.headline, indent="  ")
+        out += _wrap(gap.detail, indent="      ")
         out.append("")
 
     out.append("WHAT TO PREPARE")
     out.append("")
     for item in match.prepare:
-        out.append(f"  - {item}")
+        out += _wrap(item, indent="  ", first="  - ")
     return out
 
 
-def _wrap_quote(quote: str, width: int = 78) -> list[str]:
+def _wrap(text: str, *, indent: str, first: str | None = None, width: int = 92) -> list[str]:
+    """Wrap to a fixed width rather than the terminal's.
+
+    A fixed width keeps the card identical in a narrow pane, a wide one, and a
+    piped file — which matters because people screenshot this and paste it.
+    """
     import textwrap
 
-    wrapped = textwrap.wrap(f'"{quote}"', width=width) or ['""']
-    return wrapped
+    return textwrap.wrap(
+        text,
+        width=width,
+        initial_indent=first if first is not None else indent,
+        subsequent_indent=indent,
+    ) or [indent.rstrip()]
 
 
 # -- markdown ----------------------------------------------------------------

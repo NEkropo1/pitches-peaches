@@ -1,0 +1,51 @@
+Senior Backend Software Engineer
+Company: Semgrep
+Location: San Francisco Office
+URL: https://jobs.ashbyhq.com/semgrep/92b21a3a-fba8-4d71-9f4d-217850689f5f
+
+ABOUT SEMGREP
+
+Semgrep, the leader in code security for builders, empowers invention without friction. Teams catch, flag, and fix real issues before they ship, powered by security that learns as they build. Semgrep secures code as it’s written and provides guardrails that pave the road for developers to move fast and stay secure. Built for builders and trusted by security, Semgrep lives where developers work, delivering fixes without breaking flow, and giving security teams visibility, control, and confidence. Semgrep gets smarter as you build, with AI that learns your context to cut false positives and prioritize reachable vulnerabilities, validated by 95% of security reviewers across 6M+ findings. Semgrep makes zero false positives a reality with AppSec teams triaging 80% fewer false positives across Code and Supply Chain, dramatically shrinking the backlog.
+
+
+Founded in San Francisco and backed by Menlo Ventures, Felicis Ventures, Lightspeed Venture Partners, Redpoint Ventures, and Sequoia Capital, Semgrep is recognized by Gartner in Application Security Testing and is trusted by leading organizations, including Vanta, Lyft, and Dropbox. Learn more at semgrep.dev http://semgrep.dev.
+
+
+
+
+ABOUT THE ROLE
+
+As a Backend Engineer, you’ll work on our backend and infrastructure systems to design, build and maintain a fast and reliable user experience for our customers. You’ll collaborate with other engineers to develop the APIs, data models and services that power Semgrep’s products at scale. You should have a strong understanding of databases, query optimization and distributed systems and be comfortable integrating third-party vendors into existing first-party code.
+
+Our stack utilizes Typescript and React on the Frontend, Python, Flask and SQLAlchemy on the Backend, is deployed via Kubernetes and hosted on AWS. Professional experience with these technologies is preferred but not required provided you are open to learning them quickly!
+
+This is a hybrid role with the expectation you’ll join us 3+ days per week in our San Francisco, New York, Boston or Denver offices depending on team. Remote employment will be considered for exceptional candidates as well.
+
+
+
+
+COMPENSATION
+
+The estimated starting annual salary range for this position is $163,000 to $246,500 USD. The actual base salary will be determined based on a number of factors, which may include job-related skills, relevant experience, qualifications, location, internal equity, and market data. In addition to base salary, total compensation may include equity, variable compensation, and benefits. We view equity as a meaningful part of our compensation philosophy and a way for employees to share in the long-term value they help create.
+
+Compensation ranges are reviewed regularly and may be adjusted as the role, individual performance, or market conditions evolve.
+
+
+
+
+WHAT WE OFFER (FTE ONLY)
+
+Our goal is to competitively and fairly compensate every Semgrep employee with a system that equally rewards those who are vocal and those who are less comfortable making demands during the final steps of the hiring process. To that end, we generate internal compensation bands that are used when discussing and negotiating salaries. We update these based on market data to make sure they’re above the average for comparable roles.
+
+We invest in our employees’ well-being and long-term success through a competitive, market-aligned benefits program that meets or exceeds local market standards across all of the regions in which we hire. Benefits offerings vary by location to reflect local requirements and norms. For more detailed, location-specific information, please visit Semgrep Benefits https://www.notion.so/semgrep/Semgrep-Benefits-1593009241a88029bd7edf1fed1dfde2.
+
+
+
+
+WHO WE ARE
+
+We bring together people from a wide range of backgrounds and disciplines—from physics and philosophy to formal methods research and full-fledged corporations. We’re new parents and new grads, dog lovers and dogfooders. We get together often to bike, bake, and meet up in parks. In our interactions, we believe respect and honesty go hand in hand, and prioritize both.
+
+Semgrep is an equal-opportunity employer seeking a diverse range of backgrounds. We value who you are — including your cultural heritage, your socioeconomic status, your age, your race, your gender, your sexual orientation, your disabilities. We value what’s vitally important to you — your family, your religion, your politics. We value what you love in this world — your music, your weekend pursuits. We believe in welcoming varied professional backgrounds, educations, and interests. If you’re exceptional in your role, believe in Semgrep’s mission, and treat Semgrep’s values as your own, you belong here.
+
+Please Note: For US-based roles open to remote work, we are currently able to hire employees in the following states only: Arizona, California, Colorado, Connecticut, District of Columbia, Florida, Georgia, Illinois, Maryland, Massachusetts, Michigan, Missouri, Nebraska, New Jersey, New York, North Carolina, Oregon, Tennessee, Texas, Virginia, Washington, and Wisconsin.
