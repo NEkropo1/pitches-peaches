@@ -43,7 +43,7 @@ peaches = "pitches_peaches.cli:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-pitches_peaches = ["prompts/*.md", "assets/*.css"]
+pitches_peaches = ["prompts/*.md"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
