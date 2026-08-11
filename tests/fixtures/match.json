@@ -1,0 +1,60 @@
+{
+  "overall": 74,
+  "band": "possible",
+  "dimensions": [
+    {
+      "name": "technical",
+      "score": 82,
+      "reasoning": "Your Python, Postgres and Kubernetes work lines up with the stack they describe, and you chose Postgres over faster stores on purpose."
+    },
+    {
+      "name": "ownership",
+      "score": 78,
+      "reasoning": "You inherited an MVP and decided what to rebuild, which is the scope they are hiring for."
+    },
+    {
+      "name": "delivery",
+      "score": 85,
+      "reasoning": "Three minutes to three seconds against a one-minute SLA is the kind of number that ends this conversation early."
+    },
+    {
+      "name": "business_context",
+      "score": 45,
+      "reasoning": "Application security is not a domain you have worked in, and their buyer's constraints will be unfamiliar."
+    }
+  ],
+  "fit_points": [
+    {
+      "statement": "You have already run the migration they are most likely to attempt next.",
+      "quote": "moved to self-managed Kubernetes",
+      "claim": "Kubernetes platform ownership"
+    },
+    {
+      "statement": "You can name the latency numbers, which is what a reliability-focused team probes for.",
+      "quote": "end-to-end processing from about three minutes to about three seconds",
+      "claim": "Latency work with figures"
+    }
+  ],
+  "gaps": [
+    {
+      "headline": "No application security background.",
+      "detail": "Their product is a static analysis tool for security teams, and the vocabulary of that buyer is not in your record."
+    },
+    {
+      "headline": "No OCaml.",
+      "detail": "The analysis core is OCaml. The posting treats it as learnable, and the rest of the stack is Python, so this matters less than it looks."
+    }
+  ],
+  "prepare": [
+    "Have one incident story ready with the invariant you added afterwards.",
+    "Learn what a false positive costs an AppSec team, in hours per week."
+  ],
+  "probes": [
+    {
+      "question": "The posting mentions OCaml for the analysis core. Have you worked in a statically typed functional language?",
+      "why": "It would move the technical score and change what you volunteer.",
+      "about": "OCaml"
+    }
+  ],
+  "provisional": false
+}

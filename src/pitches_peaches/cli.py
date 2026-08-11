@@ -87,8 +87,16 @@ def _cfg(workdir: Path, **overrides) -> Config:
     return Config.load(workdir, **overrides)
 
 
-def _llm(workdir: Path, **overrides) -> LLM:
+def _llm(workdir: Path, *, needs: tuple[str, ...] = (), **overrides) -> LLM:
+    """Build the client, but check the cheap preconditions first.
+
+    Dependency order matters for the error the user actually sees: a missing
+    upstream artifact is both more likely and more actionable than a missing
+    key, so it is reported first.
+    """
     config = _cfg(workdir, **overrides)
+    if needs:
+        RunState.load(workdir).require(*needs)
     if not api_key_present():
         raise StageError(
             "ANTHROPIC_API_KEY is not set. Export it, or put it in .env in "
@@ -250,7 +258,7 @@ def match(
         state = RunState.load(workdir)
         result = stage.run(
             state,
-            _llm(workdir, model=model, effort=effort),
+            _llm(workdir, needs=("recon.json", "profile.json"), model=model, effort=effort),
             interactive=not non_interactive,
             notes_path=notes,
             report=_report,
@@ -285,7 +293,7 @@ def gate(
         state = RunState.load(workdir)
         _, decision = stage.run(
             state,
-            _llm(workdir, model=model, effort=effort),
+            _llm(workdir, needs=("recon.json", "match.json"), model=model, effort=effort),
             interactive=not non_interactive,
             assume=assume,
             report=_report,
@@ -311,7 +319,15 @@ def playbook(
     try:
         state = RunState.load(workdir)
         result = stage.run(
-            state, _llm(workdir, model=model, effort=effort), force=force, report=_step
+            state,
+            _llm(
+                workdir,
+                needs=("recon.json", "profile.json", "match.json"),
+                model=model,
+                effort=effort,
+            ),
+            force=force,
+            report=_step,
         )
     except (StageError, LLMError, PromptError) as exc:
         _fail(exc)
@@ -336,7 +352,14 @@ def render(
         state = RunState.load(workdir)
         stage.run(
             state,
-            _llm(workdir, model=model, tts_backend=tts_backend, voice=voice, rate=rate),
+            _llm(
+                workdir,
+                needs=("recon.json", "match.json"),
+                model=model,
+                tts_backend=tts_backend,
+                voice=voice,
+                rate=rate,
+            ),
             audio=audio,
             report=_step,
         )
