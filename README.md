@@ -3,7 +3,8 @@
 [![CI](https://github.com/nekropol/pitches-peaches/actions/workflows/ci.yml/badge.svg)](https://github.com/nekropol/pitches-peaches/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-Give it a job posting and your CV, and it writes you a prep dossier: markdown
+Tool main idea is to make research, based on your CV and job posting, so
+give it a job posting and your CV, and it writes you a prep dossier: markdown
 files with mermaid diagrams, a fit card you open in a browser, and optionally
 audio you can listen to on a walk. It never applies to anything. It does not
 open a browser, does not touch a job board account, does not contact anyone,
@@ -39,7 +40,7 @@ It is provider-agnostic: set whichever key you have and it uses that one.
 > [DEBRIEF.md](DEBRIEF.md) has the precise state of each.
 
 No uv? `curl -LsSf https://raw.githubusercontent.com/nekropol/pitches-peaches/main/install.sh | sh`
-(or `install.ps1` on Windows) installs uv and then the tool. Nothing else.
+(or `install.ps1` on Windows) installs uv and then the tool.
 
 ## What comes out
 
@@ -136,12 +137,12 @@ missing — naming the command that produces it.
 | `recon` | Researches the company with web search, then writes a typed record and `01-company.md`. |
 | `profile` | Parses your CV — `.json`, `.md`, `.txt`, or `.pdf` — into structured form. |
 | `match` | Scores the role against you on four dimensions, then asks you follow-up questions and re-scores. |
-| `gate` | Recommends apply, apply-with-caveats, or don't. You decide; the decision is recorded. |
+| `gate` | Recommends apply, apply-with-caveats, or don't. You decide. |
 | `playbook` | Predicts what they will ask and answers it at depth. |
 | `render` | Diagrams, the index, `fit.html`, and optionally narration audio. |
 
 **On the scores, straight:** the model produces them. There is no weighting
-table in the Python, because calibrating one honestly needs ground-truth match
+table, because calibrating one honestly needs ground-truth match
 data this project does not have, and a hand-picked weight table is fake
 precision dressed up as objectivity. What makes the numbers worth reading is
 the structure around them — four fixed dimensions that are always all present,
@@ -159,7 +160,7 @@ your background, no "self-reported", no hedging. You supply the truth about
 your own career and you are responsible for it; the tool's job is to be useful
 with it, not to audit it.
 
-The one exception is proofreading. If two lines of your CV disagree — "8+
+The one exception is proofreading. If two lines of your CV disagree — "5+
 years" in one place and a timeline that adds to thirteen in another — it says
 so, phrased as a choice to make before the call, never as a doubt about which
 is true.
@@ -196,7 +197,7 @@ There is a quality ladder, and it is worth knowing where you are on it:
    Manage Voices. Then `--voice Ava`.
 3. **A paid TTS API** — noticeably better than either. We do not ship one,
    because it would mean a second credential, and the whole point is that
-   `ANTHROPIC_API_KEY` is the only thing you have to supply.
+   `{LLM_PROVIDER}_API_KEY` is the only thing you have to supply.
 
 That third rung is a fifteen-line file. The backend contract is:
 
