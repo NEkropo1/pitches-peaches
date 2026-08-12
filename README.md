@@ -167,9 +167,19 @@ read the answers and decide what you know.
 
 ## Better voiceovers
 
-`--audio` writes TTS-safe narration scripts to `scripts/*.txt` and then
-synthesizes them. If no backend is available it writes the scripts anyway and
-tells you exactly what to install.
+`peaches run` asks at the end, once the dossier exists and you can see whether
+it is worth listening to:
+
+```
+Narration is written for the ear and synthesized with kokoro. It costs one more
+model call per document and a few minutes.
+Render narration audio? [y/N]:
+```
+
+Enter means no. Pass `--audio` or `--no-audio` to decide up front and skip the
+question, which is also what a `--non-interactive` run does. Either way it
+writes TTS-safe narration scripts to `scripts/*.txt`; if no backend is
+available it writes the scripts anyway and tells you exactly what to install.
 
 There is a quality ladder, and it is worth knowing where you are on it:
 

@@ -184,3 +184,61 @@ def test_the_verified_combination_does_not_warn(tmp_path, monkeypatch):
          "--model", pitches_peaches.VERIFIED_MODEL],
     )
     assert "has only been run end to end" not in " ".join(result.output.split())
+
+
+# -- the audio question ------------------------------------------------------
+
+
+def _llm_for_audio(tmp_path):
+    from pitches_peaches.config import Config
+    from pitches_peaches.llm import LLM
+    from pitches_peaches.providers import select
+
+    return LLM(Config.load(tmp_path), select("openai"), "m")
+
+
+@pytest.mark.parametrize("flag", [True, False])
+def test_an_explicit_audio_flag_is_never_second_guessed(tmp_path, flag, monkeypatch):
+    from pitches_peaches.cli import _want_audio
+
+    def no_prompts(*args, **kwargs):  # a prompt here would hang a scripted run
+        raise AssertionError("asked despite an explicit flag")
+
+    monkeypatch.setattr("typer.confirm", no_prompts)
+    assert _want_audio(flag, _llm_for_audio(tmp_path), interactive=True) is flag
+
+
+def test_non_interactive_never_asks(tmp_path, monkeypatch):
+    from pitches_peaches.cli import _want_audio
+
+    monkeypatch.setattr(
+        "typer.confirm", lambda *a, **k: (_ for _ in ()).throw(AssertionError("asked"))
+    )
+    # None means "fall through to the config default", not "prompt"
+    assert _want_audio(None, _llm_for_audio(tmp_path), interactive=False) is None
+
+
+@pytest.mark.parametrize("answer", [True, False])
+def test_interactive_run_asks_and_takes_the_answer(tmp_path, monkeypatch, answer):
+    from pitches_peaches.cli import _want_audio
+
+    asked = {}
+
+    def fake_confirm(question, default=None, **kwargs):
+        asked["question"] = question
+        asked["default"] = default
+        return answer
+
+    monkeypatch.setattr("typer.confirm", fake_confirm)
+    assert _want_audio(None, _llm_for_audio(tmp_path), interactive=True) is answer
+    assert "audio" in asked["question"].lower()
+    assert asked["default"] is False, "audio must be opt-in, so enter means no"
+
+
+def test_ctrl_c_at_the_audio_prompt_means_no(tmp_path, monkeypatch):
+    from pitches_peaches.cli import _want_audio
+
+    monkeypatch.setattr(
+        "typer.confirm", lambda *a, **k: (_ for _ in ()).throw(KeyboardInterrupt)
+    )
+    assert _want_audio(None, _llm_for_audio(tmp_path), interactive=True) is False

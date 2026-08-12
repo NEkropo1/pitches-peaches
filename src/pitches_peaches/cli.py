@@ -164,6 +164,38 @@ def _card(lines: list[str]) -> None:
         console.print(line, highlight=False, markup=False)
 
 
+def _want_audio(flag: Optional[bool], llm: LLM, interactive: bool) -> Optional[bool]:
+    """Ask about audio at the end, once the dossier exists.
+
+    Deciding up front means deciding before you know whether the dossier is
+    worth listening to — and audio is the slowest, most optional part of the
+    run. An explicit --audio/--no-audio still wins, and a non-interactive run
+    falls through to the config default rather than blocking on a prompt.
+    """
+    if flag is not None or not interactive:
+        return flag
+
+    from . import tts
+
+    backend = tts.select(llm.config.tts_backend)
+    console.print()
+    if backend is None:
+        console.print(
+            "[dim]No TTS backend is installed, so this writes the narration "
+            "scripts only — you can synthesize them later.[/dim]"
+        )
+    else:
+        console.print(
+            f"[dim]Narration is written for the ear and synthesized with "
+            f"{backend.name}. It costs one more model call per document and a "
+            f"few minutes.[/dim]"
+        )
+    try:
+        return typer.confirm("Render narration audio?", default=False)
+    except (EOFError, KeyboardInterrupt):
+        return False
+
+
 # -- options -----------------------------------------------------------------
 
 WorkdirOpt = typer.Option(
@@ -416,7 +448,11 @@ def run(
     company: Optional[str] = typer.Option(None, "--company"),
     notes: Optional[str] = typer.Option(None, "--notes", help="Extra context about you, as a file."),
     non_interactive: bool = typer.Option(False, "--non-interactive"),
-    audio: bool = typer.Option(False, "--audio"),
+    audio: Optional[bool] = typer.Option(
+        None,
+        "--audio/--no-audio",
+        help="Skip the question and decide up front.",
+    ),
     force: bool = typer.Option(False, "--force", help="Build the playbook even on a declined gate."),
     model: Optional[str] = ModelOpt,
     effort: Optional[str] = EffortOpt,
@@ -476,7 +512,9 @@ def run(
         playbook_stage.run(state, llm, force=force, report=_step)
 
         console.rule("[bold]render")
-        render_stage.run(state, llm, audio=audio, report=_step)
+        render_stage.run(
+            state, llm, audio=_want_audio(audio, llm, interactive), report=_step
+        )
     except typer.Exit:
         raise
     except (StageError, LLMError, providers.ProviderError, PromptError, FileNotFoundError, ValueError) as exc:
