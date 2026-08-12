@@ -226,3 +226,78 @@ def test_sample_env_has_no_trailing_comments_on_settable_lines():
             f".env.sample:{number} has a trailing comment on a settable line, "
             f"which becomes part of the value when uncommented: {line!r}"
         )
+
+
+# -- artifacts are documents, not chat replies -------------------------------
+
+
+@pytest.mark.parametrize(
+    "tail",
+    [
+        "If you want, I can turn these notes into a cheat sheet.",
+        "If you'd like, I can expand this into a one-pager.",
+        "Would you like me to draft the follow-up email?",
+        "Let me know if you need anything else.",
+        "Shall I also cover the system design round?",
+        "I can also generate a one-page summary.",
+        "Hope this helps!",
+    ],
+)
+def test_trailing_offers_of_help_are_stripped(tail):
+    from pitches_peaches.state import strip_assistant_residue
+
+    body = "## Open questions\n\n- What is the team size?"
+    assert strip_assistant_residue(f"{body}\n\n{tail}") == body
+
+
+def test_real_content_that_merely_contains_the_phrase_survives():
+    """The lead-in alone is not a trigger — this is ordinary prose in a gaps section."""
+    from pitches_peaches.state import strip_assistant_residue
+
+    text = (
+        "## Gaps\n\n"
+        "If you want Kafka on your CV, they run it in production and will ask "
+        "about it in the systems round."
+    )
+    assert strip_assistant_residue(text) == text.rstrip()
+
+
+def test_a_long_final_paragraph_is_never_truncated():
+    """An offer is short. A long closing section is content, whatever it opens with."""
+    from pitches_peaches.state import strip_assistant_residue
+
+    long_close = "Let me know if " + "this genuinely matters. " * 20
+    text = f"## Close\n\n{long_close}"
+    assert strip_assistant_residue(text) == text.rstrip()
+
+
+def test_a_single_paragraph_document_is_left_alone():
+    from pitches_peaches.state import strip_assistant_residue
+
+    text = "Shall I is a phrase, and this document is one paragraph."
+    assert strip_assistant_residue(text) == text
+
+
+def test_documents_without_residue_are_untouched():
+    from pitches_peaches.state import strip_assistant_residue
+
+    text = "# Dossier\n\nYou are walking into a three-person company."
+    assert strip_assistant_residue(text) == text
+
+
+def test_write_text_strips_residue_on_the_way_to_disk(tmp_path):
+    state = RunState.load_or_create(tmp_path)
+    state.write_text(
+        "01-company.md",
+        "# Semgrep\n\nReal content.\n\nIf you want, I can turn this into a deck.",
+    )
+    written = (tmp_path / "01-company.md").read_text()
+    assert "If you want" not in written
+    assert written == "# Semgrep\n\nReal content.\n"
+
+
+def test_the_shipped_prompts_forbid_offering_further_help():
+    from pitches_peaches.prompts import render
+
+    voice = render("recon_research")
+    assert "writing a file, not a chat reply" in voice

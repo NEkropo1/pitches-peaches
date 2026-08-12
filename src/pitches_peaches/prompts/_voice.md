@@ -31,6 +31,10 @@ without finding product-market fit. Both are true simultaneously, and the
 reader does not have to resolve which dominates before the call — they have to
 know which question to ask.
 
+You are writing a file, not a chat reply. Never end by offering to do more —
+no "if you want, I can…", no "would you like me to…", no "let me know if…".
+There is nobody to answer you. The document ends when the content ends.
+
 Say when you do not know. "Unverified — confirm on the call" is a complete and
 useful sentence. Guessing and sounding confident is the one failure mode that
 actually costs this person the job, because they will repeat it to someone who

@@ -37,7 +37,9 @@ It is provider-agnostic: set whichever key you have and it uses that one.
 > Treat those as unproven rather than broken — the code may well work, it just
 > has not been watched working. The CLI says so at runtime when you are on an
 > unverified combination, and `peaches version` prints this list.
-> [DEBRIEF.md](DEBRIEF.md) has the precise state of each.
+> [DEBRIEF.md](DEBRIEF.md) has the precise state of each, and
+> [METRICS.md](METRICS.md) has what the one verified run actually cost and
+> produced.
 
 No uv? `curl -LsSf https://raw.githubusercontent.com/nekropol/pitches-peaches/main/install.sh | sh`
 (or `install.ps1` on Windows) installs uv and then the tool.
@@ -318,18 +320,28 @@ about the company, not about you — your CV is not in that request.
 
 ## Cost
 
-A full run is roughly **300k–500k input tokens and 40k–70k output**, most of it
-the recon research and the playbook's long answers. At Opus 5 pricing ($5/$25
-per million) that is **about $2.50–$4.50 per application**.
+Measured, not guessed: **about $0.96 for one complete run** on
+`openai/gpt-5.4-mini` at `medium` effort — 12 model requests, roughly 233k
+input and 126k output tokens, and about 22 web searches. Output is ~59% of the
+bill, web search ~23%.
 
-Cheaper, in the order I would reach for them: `--effort medium`, then a smaller
-model (`--model claude-sonnet-5`), then a cheaper provider. Effort first,
-because the depth of the playbook answers is the part worth paying for.
+[METRICS.md](METRICS.md) has the full breakdown, the billing evidence, and an
+honest account of what that number is not.
 
-These are estimates, not measurements — nothing records token usage yet. See
-[DEBRIEF.md](DEBRIEF.md).
+Two things move it a lot:
 
-Re-running a single stage only re-spends that stage.
+- **Model.** The figure above is a mini-tier model. An Opus- or GPT-5-tier
+  model is several times more per token.
+- **Audio.** Narration adds three model requests. A run without it makes 9
+  requests instead of 12.
+
+`--effort medium` is a reasonable dial to reach for before changing model,
+because the playbook's depth is the part worth paying for. Re-running a single
+stage only re-spends that stage.
+
+> Nothing records token usage yet, so this comes from a provider billing page
+> rather than from the tool itself. Fixing that is the top item in
+> [DEBRIEF.md](DEBRIEF.md).
 
 ## Development
 

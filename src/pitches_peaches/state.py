@@ -8,6 +8,7 @@ artifact is missing, and names the command that produces it.
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
@@ -22,6 +23,49 @@ PRODUCERS: dict[str, str] = {
     "match.json": "peaches match",
     "playbook.json": "peaches playbook",
 }
+
+
+#: A trailing offer of further help — a chat habit, in a file nobody can reply to.
+#:
+#: Deliberately narrow. "If you want X, they have it" is ordinary prose in a
+#: gaps section, so the lead-in alone is not a trigger: there has to be a
+#: first-person offer to actually do something.
+_OFFER = re.compile(
+    r"""^(?:
+        [^\n]{0,120}?\bI\s+(?:can|could|
+            would\s+be\s+happy\s+to)\s+(?:also\s+)?
+            (?:turn|make|create|expand|draft|produce|generate|write|put\s+together)\b
+      | would\s+you\s+like\s+me\s+to\b
+      | shall\s+I\b
+      | let\s+me\s+know\s+if\b
+      | hope\s+this\s+helps\b
+    )""",
+    re.IGNORECASE | re.VERBOSE,
+)
+
+#: An offer is always short. A long final paragraph is content, whatever it says.
+_MAX_RESIDUE = 300
+
+
+def strip_assistant_residue(text: str) -> str:
+    """Drop a trailing offer of further help from a finished document.
+
+    The prompts ask for this, but a prompt is a request and a file is a
+    deliverable. A dossier ending "if you want, I can turn these notes into..."
+    reads like a chat transcript someone forgot to clean up, and there is
+    nobody on the other end to accept the offer.
+
+    Only the final paragraph is ever considered, and only when it is short —
+    so a genuine closing section is never silently truncated.
+    """
+    body = text.rstrip()
+    parts = re.split(r"\n[ \t]*\n", body)
+    if len(parts) < 2:
+        return body  # a single paragraph is the whole document; leave it alone
+    last = parts[-1].strip()
+    if len(last) <= _MAX_RESIDUE and _OFFER.match(last):
+        return "\n\n".join(parts[:-1]).rstrip()
+    return body
 
 
 class StageError(RuntimeError):
@@ -123,6 +167,7 @@ class RunState:
     def write_text(self, name: str, text: str) -> Path:
         path = self.artifact_path(name)
         path.parent.mkdir(parents=True, exist_ok=True)
+        text = strip_assistant_residue(text)
         if not text.endswith("\n"):
             text += "\n"
         path.write_text(text, encoding="utf-8")

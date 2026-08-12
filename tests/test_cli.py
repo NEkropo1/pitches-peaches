@@ -242,3 +242,22 @@ def test_ctrl_c_at_the_audio_prompt_means_no(tmp_path, monkeypatch):
         "typer.confirm", lambda *a, **k: (_ for _ in ()).throw(KeyboardInterrupt)
     )
     assert _want_audio(None, _llm_for_audio(tmp_path), interactive=True) is False
+
+
+def test_metrics_doc_exists_and_is_linked_from_the_readme():
+    """A cost claim in the README must point at the evidence behind it."""
+    assert (ROOT / "METRICS.md").exists()
+    readme = (ROOT / "README.md").read_text()
+    assert "METRICS.md" in readme
+
+
+def test_metrics_doc_names_the_verified_combination():
+    text = (ROOT / "METRICS.md").read_text()
+    assert pitches_peaches.VERIFIED_PROVIDER in text
+    assert pitches_peaches.VERIFIED_MODEL in text
+
+
+def test_readme_no_longer_carries_the_pre_measurement_cost_guess():
+    """The old $2.50-$4.50 figure was inferred from list prices, never measured."""
+    readme = (ROOT / "README.md").read_text()
+    assert "$2.50" not in readme and "$4.50" not in readme
