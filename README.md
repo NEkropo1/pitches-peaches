@@ -21,7 +21,7 @@ It is provider-agnostic: set whichever key you have and it uses that one.
 > with **`gpt-5.4-mini`**, in one configuration: non-interactive, no audio, a
 > JSON CV.
 >
-> Everything else is written and unit tested — 176 offline tests — but has
+> Everything else is written and covered by the offline test suite, but has
 > **never made a live API call**. That includes:
 >
 > - the **Anthropic and Gemini providers**
