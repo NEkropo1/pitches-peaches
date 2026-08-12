@@ -85,7 +85,7 @@ def test_proceed_decision_lets_downstream_run(tmp_path):
 def test_state_file_is_readable_json(tmp_path):
     state = RunState.load_or_create(tmp_path)
     state.record("recon")
-    payload = json.loads((tmp_path / "run.json").read_text())
+    payload = json.loads((tmp_path / "run.json").read_text(encoding="utf-8"))
     assert "stages" in payload and "recon" in payload["stages"]
 
 
@@ -101,14 +101,16 @@ def test_config_defaults(tmp_path):
 
 
 def test_config_file_beats_default(tmp_path):
-    (tmp_path / "peaches.toml").write_text('model = "claude-sonnet-5"\nrate = 165\n')
+    (tmp_path / "peaches.toml").write_text(
+        'model = "claude-sonnet-5"\nrate = 165\n', encoding="utf-8"
+    )
     cfg = Config.load(tmp_path)
     assert cfg.model == "claude-sonnet-5"
     assert cfg.rate == 165
 
 
 def test_env_beats_config_file(tmp_path, monkeypatch):
-    (tmp_path / "peaches.toml").write_text('model = "claude-sonnet-5"\n')
+    (tmp_path / "peaches.toml").write_text('model = "claude-sonnet-5"\n', encoding="utf-8")
     monkeypatch.setenv("PEACHES_MODEL", "claude-opus-5")
     assert Config.load(tmp_path).model == "claude-opus-5"
 
@@ -119,7 +121,7 @@ def test_flag_beats_env(tmp_path, monkeypatch):
 
 
 def test_none_overrides_are_ignored(tmp_path):
-    (tmp_path / "peaches.toml").write_text('model = "claude-sonnet-5"\n')
+    (tmp_path / "peaches.toml").write_text('model = "claude-sonnet-5"\n', encoding="utf-8")
     assert Config.load(tmp_path, model=None).model == "claude-sonnet-5"
 
 
@@ -132,7 +134,7 @@ def test_bools_and_ints_coerce_from_env(tmp_path, monkeypatch):
 
 
 def test_unknown_config_keys_are_ignored(tmp_path):
-    (tmp_path / "peaches.toml").write_text('model = "x"\nnonsense = 1\n')
+    (tmp_path / "peaches.toml").write_text('model = "x"\nnonsense = 1\n', encoding="utf-8")
     assert Config.load(tmp_path).model == "x"
 
 
@@ -140,7 +142,7 @@ def test_unknown_config_keys_are_ignored(tmp_path):
 
 
 def _dotenv(tmp_path, body: str):
-    (tmp_path / ".env").write_text(body)
+    (tmp_path / ".env").write_text(body, encoding="utf-8")
     return tmp_path
 
 
@@ -218,7 +220,7 @@ def test_sample_env_has_no_trailing_comments_on_settable_lines():
     from pathlib import Path
 
     sample = Path(__file__).parent.parent / ".env.sample"
-    for number, line in enumerate(sample.read_text().splitlines(), 1):
+    for number, line in enumerate(sample.read_text(encoding="utf-8").splitlines(), 1):
         body = line.lstrip("# ").strip()
         if not re.match(r"^[A-Z][A-Z0-9_]*=", body):
             continue
@@ -291,7 +293,7 @@ def test_write_text_strips_residue_on_the_way_to_disk(tmp_path):
         "01-company.md",
         "# Semgrep\n\nReal content.\n\nIf you want, I can turn this into a deck.",
     )
-    written = (tmp_path / "01-company.md").read_text()
+    written = (tmp_path / "01-company.md").read_text(encoding="utf-8")
     assert "If you want" not in written
     assert written == "# Semgrep\n\nReal content.\n"
 

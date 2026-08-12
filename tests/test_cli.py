@@ -28,10 +28,10 @@ def test_init_scaffolds_the_run_directory(tmp_path):
 
 def test_init_is_idempotent(tmp_path):
     runner.invoke(app, ["init", "-C", str(tmp_path)])
-    (tmp_path / "peaches.toml").write_text('model = "mine"\n')
+    (tmp_path / "peaches.toml").write_text('model = "mine"\n', encoding="utf-8")
     result = runner.invoke(app, ["init", "-C", str(tmp_path)])
     assert result.exit_code == 0
-    assert (tmp_path / "peaches.toml").read_text() == 'model = "mine"\n'
+    assert (tmp_path / "peaches.toml").read_text(encoding="utf-8") == 'model = "mine"\n'
 
 
 def test_generated_config_documents_every_knob(tmp_path):
@@ -40,7 +40,7 @@ def test_generated_config_documents_every_knob(tmp_path):
     from pitches_peaches.config import Config
 
     runner.invoke(app, ["init", "-C", str(tmp_path)])
-    text = (tmp_path / "peaches.toml").read_text()
+    text = (tmp_path / "peaches.toml").read_text(encoding="utf-8")
     for field in fields(Config):
         assert field.name in text, f"{field.name} is undocumented in peaches.toml"
         assert f"PEACHES_{field.name.upper()}" in text
@@ -48,14 +48,14 @@ def test_generated_config_documents_every_knob(tmp_path):
 
 def test_generated_gitignore_covers_the_env_file(tmp_path):
     runner.invoke(app, ["init", "-C", str(tmp_path)])
-    assert ".env" in (tmp_path / ".gitignore").read_text()
+    assert ".env" in (tmp_path / ".gitignore").read_text(encoding="utf-8")
 
 
 def test_generated_example_cv_is_valid_json_and_self_documenting(tmp_path):
     import json
 
     runner.invoke(app, ["init", "-C", str(tmp_path)])
-    data = json.loads((tmp_path / "cv.example.json").read_text())
+    data = json.loads((tmp_path / "cv.example.json").read_text(encoding="utf-8"))
     assert "_comment" in data
     assert data["projects"] and "_comment" in data["projects"][0]
 
@@ -82,8 +82,23 @@ def test_missing_dependency_is_reported_before_the_missing_key(
     assert "ANTHROPIC_API_KEY" not in result.output
 
 
+def test_the_fix_command_survives_a_long_workdir(tmp_path, monkeypatch):
+    """A CI tmp path once pushed "peaches recon" over the wrap column.
+
+    The command is the one thing in the message a person copies, so it has to
+    arrive whole no matter how long the path in front of it is.
+    """
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    deep = tmp_path.joinpath(*["a-directory-with-a-long-name"] * 4)
+    deep.mkdir(parents=True)
+    runner.invoke(app, ["init", "-C", str(deep)])
+    result = runner.invoke(app, ["match", "-C", str(deep)])
+    assert result.exit_code == 1
+    assert "Run: peaches recon <url|file>" in result.output
+
+
 def test_match_names_profile_once_recon_exists(workdir):
-    (workdir / "recon.json").write_text("{}")
+    (workdir / "recon.json").write_text("{}", encoding="utf-8")
     result = runner.invoke(app, ["match", "-C", str(workdir)])
     assert "profile.json" in result.output
     assert "peaches profile" in result.output
@@ -91,7 +106,7 @@ def test_match_names_profile_once_recon_exists(workdir):
 
 def test_missing_key_is_reported_when_dependencies_are_satisfied(workdir):
     for name in ("recon.json", "profile.json", "match.json"):
-        (workdir / name).write_text("{}")
+        (workdir / name).write_text("{}", encoding="utf-8")
     result = runner.invoke(app, ["match", "-C", str(workdir)])
     assert result.exit_code == 1
     assert "ANTHROPIC_API_KEY" in result.output
@@ -141,7 +156,7 @@ def test_version_command_prints_what_is_verified():
 @pytest.mark.parametrize("doc", ["README.md", "skill/SKILL.md"])
 def test_docs_name_the_same_verified_combination_as_the_code(doc):
     """If someone bumps VERIFIED_MODEL, these fail until the docs follow."""
-    text = (ROOT / doc).read_text()
+    text = (ROOT / doc).read_text(encoding="utf-8")
     assert pitches_peaches.VERIFIED_MODEL in text, (
         f"{doc} does not mention the verified model "
         f"({pitches_peaches.VERIFIED_MODEL}); it will mislead people."
@@ -150,12 +165,12 @@ def test_docs_name_the_same_verified_combination_as_the_code(doc):
 
 
 def test_readme_states_the_version_it_is_making_claims_about():
-    text = (ROOT / "README.md").read_text()
+    text = (ROOT / "README.md").read_text(encoding="utf-8")
     assert f"v{pitches_peaches.__version__}" in text
 
 
 def test_readme_names_every_unproven_path():
-    text = " ".join((ROOT / "README.md").read_text().split()).lower()
+    text = " ".join((ROOT / "README.md").read_text(encoding="utf-8").split()).lower()
     for fragment in ("anthropic and gemini", "pdf cv", "interactive", "audio"):
         assert fragment in text, f"README does not flag {fragment!r} as unproven"
 
@@ -165,7 +180,7 @@ def test_running_on_an_unverified_combination_warns(tmp_path, monkeypatch):
     monkeypatch.setenv("ANTHROPIC_API_KEY", "x")
     runner.invoke(app, ["init", "-C", str(tmp_path)])
     for name in ("recon.json", "match.json"):
-        (tmp_path / name).write_text("{}")
+        (tmp_path / name).write_text("{}", encoding="utf-8")
     result = runner.invoke(app, ["render", "-C", str(tmp_path)])
     output = " ".join(result.output.split())
     assert "has only been run end to end" in output
@@ -177,7 +192,7 @@ def test_the_verified_combination_does_not_warn(tmp_path, monkeypatch):
     monkeypatch.setenv("OPENAI_API_KEY", "x")
     runner.invoke(app, ["init", "-C", str(tmp_path)])
     for name in ("recon.json", "match.json"):
-        (tmp_path / name).write_text("{}")
+        (tmp_path / name).write_text("{}", encoding="utf-8")
     result = runner.invoke(
         app,
         ["render", "-C", str(tmp_path), "--provider", pitches_peaches.VERIFIED_PROVIDER,
@@ -247,17 +262,35 @@ def test_ctrl_c_at_the_audio_prompt_means_no(tmp_path, monkeypatch):
 def test_metrics_doc_exists_and_is_linked_from_the_readme():
     """A cost claim in the README must point at the evidence behind it."""
     assert (ROOT / "METRICS.md").exists()
-    readme = (ROOT / "README.md").read_text()
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
     assert "METRICS.md" in readme
 
 
 def test_metrics_doc_names_the_verified_combination():
-    text = (ROOT / "METRICS.md").read_text()
+    text = (ROOT / "METRICS.md").read_text(encoding="utf-8")
     assert pitches_peaches.VERIFIED_PROVIDER in text
     assert pitches_peaches.VERIFIED_MODEL in text
 
 
 def test_readme_no_longer_carries_the_pre_measurement_cost_guess():
     """The old $2.50-$4.50 figure was inferred from list prices, never measured."""
-    readme = (ROOT / "README.md").read_text()
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
     assert "$2.50" not in readme and "$4.50" not in readme
+
+
+def test_no_text_file_is_read_in_the_locale_encoding():
+    """Windows defaults to cp1252, which cannot read our own em dashes.
+
+    Every dossier, prompt and doc here is UTF-8, so every read must say so.
+    """
+    bare = ".read_text" + "()"  # split so this line is not its own offender
+    offenders = [
+        f"{path.relative_to(ROOT)}:{number}"
+        for directory in ("src", "tests")
+        for path in (ROOT / directory).rglob("*.py")
+        for number, line in enumerate(
+            path.read_text(encoding="utf-8").splitlines(), 1
+        )
+        if bare in line
+    ]
+    assert not offenders, f"{bare} without encoding=: {offenders}"

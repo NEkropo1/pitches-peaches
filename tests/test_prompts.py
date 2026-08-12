@@ -30,7 +30,7 @@ def test_voice_is_shared_not_duplicated():
     voice = render("recon_research")
     assert "it's worth noting" in voice  # the ban list reached the prompt
     # ...and it is not pasted into the file itself
-    assert "{{voice}}" in (PROMPT_DIR / "recon_research.md").read_text()
+    assert "{{voice}}" in (PROMPT_DIR / "recon_research.md").read_text(encoding="utf-8")
 
 
 def test_missing_placeholder_is_a_clear_error():

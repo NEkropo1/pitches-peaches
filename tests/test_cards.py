@@ -14,7 +14,7 @@ FIXTURE = Path(__file__).parent / "fixtures" / "match.json"
 
 @pytest.fixture
 def match() -> Match:
-    return Match.model_validate(json.loads(FIXTURE.read_text()))
+    return Match.model_validate(json.loads(FIXTURE.read_text(encoding="utf-8")))
 
 
 def test_fixture_is_a_valid_match(match):

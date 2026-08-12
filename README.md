@@ -1,6 +1,6 @@
 # PitchesPeaches
 
-[![CI](https://github.com/nekropol/pitches-peaches/actions/workflows/ci.yml/badge.svg)](https://github.com/nekropol/pitches-peaches/actions/workflows/ci.yml)
+[![CI](https://github.com/NEkropo1/pitches-peaches/actions/workflows/ci.yml/badge.svg)](https://github.com/NEkropo1/pitches-peaches/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 Tool main idea is to make research, based on your CV and job posting, so
@@ -41,7 +41,7 @@ It is provider-agnostic: set whichever key you have and it uses that one.
 > [METRICS.md](METRICS.md) has what the one verified run actually cost and
 > produced.
 
-No uv? `curl -LsSf https://raw.githubusercontent.com/nekropol/pitches-peaches/main/install.sh | sh`
+No uv? `curl -LsSf https://raw.githubusercontent.com/NEkropo1/pitches-peaches/main/install.sh | sh`
 (or `install.ps1` on Windows) installs uv and then the tool.
 
 ## What comes out

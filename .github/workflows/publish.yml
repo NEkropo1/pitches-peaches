@@ -24,8 +24,8 @@ jobs:
 
       - name: Test before shipping
         run: |
-          uv sync --extra dev
-          uv run pytest -q
+          uv sync --extra dev --python 3.14
+          uv run --python 3.14 pytest -q
 
       - run: uv build
       - run: uvx twine check dist/*

@@ -44,7 +44,9 @@ app = typer.Typer(
     add_completion=False,
 )
 console = Console()
-err = Console(stderr=True)
+# Errors name the command that fixes them, so nothing here may be re-wrapped:
+# rich breaking "peaches recon" across two lines costs the reader a paste.
+err = Console(stderr=True, soft_wrap=True)
 
 CV_EXAMPLE = {
     "_comment": "All values can be overwritten, this is an example. Delete what does not apply.",

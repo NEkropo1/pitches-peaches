@@ -69,15 +69,18 @@ def strip_assistant_residue(text: str) -> str:
 
 
 class StageError(RuntimeError):
-    """A stage cannot run. The message names the fix."""
+    """A stage cannot run. The message names the fix.
+
+    The fix goes on its own line: a workdir path is long enough to push the
+    command past the edge of a narrow terminal, and a command split across a
+    line break is one you cannot copy.
+    """
 
 
 class MissingDependency(StageError):
     def __init__(self, artifact: str, workdir: Path) -> None:
         producer = PRODUCERS.get(artifact, f"the stage that writes {artifact}")
-        super().__init__(
-            f"{artifact} is missing from {workdir}. Run:  {producer}"
-        )
+        super().__init__(f"{artifact} is missing from {workdir}.\nRun: {producer}")
         self.artifact = artifact
 
 
@@ -102,9 +105,7 @@ class RunState:
     def load(cls, workdir: Path) -> RunState:
         path = Path(workdir) / STATE_FILE
         if not path.exists():
-            raise StageError(
-                f"no {STATE_FILE} in {workdir}. Run:  peaches init"
-            )
+            raise StageError(f"no {STATE_FILE} in {workdir}.\nRun: peaches init")
         return cls(Path(workdir), json.loads(path.read_text(encoding="utf-8")))
 
     @classmethod
@@ -194,7 +195,7 @@ class RunState:
             return
         decision = self.decision
         if decision is None:
-            raise StageError("the gate has not been run. Run:  peaches gate")
+            raise StageError("the gate has not been run.\nRun: peaches gate")
         if decision != "proceed":
             raise StageError(
                 "you decided not to proceed with this application "

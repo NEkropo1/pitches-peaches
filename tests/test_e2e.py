@@ -141,14 +141,14 @@ def test_full_pipeline(workdir: Path, llm: LLM):
 
     # Grounding is the least portable of the three call shapes — check the
     # provider's web search actually ran and its citations were extracted.
-    notes = (workdir / "recon-notes.md").read_text()
+    notes = (workdir / "recon-notes.md").read_text(encoding="utf-8")
     assert len(notes) > 800, "research produced almost nothing"
     assert state.stages["recon"]["sources"], (
         "no sources were extracted — the provider's grounding result walker "
         "is probably reading the wrong field"
     )
 
-    dossier = (workdir / "01-company.md").read_text()
+    dossier = (workdir / "01-company.md").read_text(encoding="utf-8")
     assert len(dossier) > 1500, "the dossier is suspiciously short"
     assert dossier.lstrip().startswith("#")
 
@@ -168,8 +168,8 @@ def test_full_pipeline(workdir: Path, llm: LLM):
     assert match.fit_points, "every fit point was dropped by quote verification"
     assert match.gaps
 
-    source = (workdir / "cv-source.txt").read_text() + json.dumps(
-        json.loads((workdir / "profile.json").read_text())
+    source = (workdir / "cv-source.txt").read_text(encoding="utf-8") + json.dumps(
+        json.loads((workdir / "profile.json").read_text(encoding="utf-8"))
     )
     for point in match.fit_points:
         assert quote_appears(point.quote, source), (
@@ -206,14 +206,14 @@ def test_full_pipeline(workdir: Path, llm: LLM):
     for name in ("00-README.md", "02-fit.md", "03-playbook.md", "fit.html"):
         assert state.has(name), f"render did not write {name}"
 
-    page = (workdir / "fit.html").read_text()
+    page = (workdir / "fit.html").read_text(encoding="utf-8")
     assert "<style>" in page
     assert "https://" not in page.split("<footer>")[0], "fit.html references the network"
 
     diagrams = list((workdir / "diagrams").glob("*.mermaid"))
     assert diagrams, "no standalone .mermaid files were written"
     for diagram in diagrams:
-        assert diagram.read_text().strip().startswith("flowchart")
+        assert diagram.read_text(encoding="utf-8").strip().startswith("flowchart")
 
     # --- the state machine survived the whole thing -----------------------
     final = RunState.load(workdir)

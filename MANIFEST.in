@@ -1,0 +1,9 @@
+# setuptools already picks up tests/*.py, but not conftest.py or the fixtures
+# they load — so an unpacked sdist could not run its own suite.
+graft tests
+prune tests/__pycache__
+# The suite also asserts that these docs agree with the code, so they travel
+# with it.
+include METRICS.md DEBRIEF.md .env.sample
+graft skill
+global-exclude *.py[cod] .DS_Store
