@@ -17,8 +17,10 @@ peaches run https://the-job-posting --cv ~/cv.pdf -C runs/acme
 ```
 
 It is provider-agnostic: set whichever key you have and it uses that one.
+It needs **Python 3.14+** — `uv tool install` fetches a suitable interpreter
+for you, so this matters only if you install it some other way.
 
-> ### ⚠️ v0.1.0: what has actually been run
+> ### ⚠️ v0.1.1: what has actually been run
 >
 > Verified end to end on **OpenAI only**, with **`gpt-5.4-mini`** — both
 > non-interactive and with the probe loop and gate answered by hand, using a
@@ -64,7 +66,9 @@ runs/acme/
 └── run.json            which stages ran, and what you decided
 ```
 
-The card, as `peaches match` prints it:
+The card, as `peaches match` prints it — this is genuine output from the run
+in [METRICS.md](METRICS.md), against the checked-in fixture posting and CV,
+trimmed for length:
 
 ```
 Senior Backend Software Engineer — Semgrep
@@ -73,57 +77,73 @@ AI recommendation — you decide next. PitchesPeaches does not apply to anything
 anyone, or send anything anywhere. Everything below is built from what you provided about
 yourself.
 
-  OVERALL   74/100   POSSIBLE FIT
-           ██████████████████████████████████░░░░░░░░░░░░
+  OVERALL   88/100   STRONG FIT
+           ████████████████████████████████████████░░░░░░
 
-  TECHNICAL         82  ██████████████████████████░░░░░░
-                        Your Python, Postgres and Kubernetes work lines up with the stack
-                        they describe, and you chose Postgres over faster stores on purpose.
+  TECHNICAL         90  █████████████████████████████░░░
+                        You already run Python, Flask, SQLAlchemy, PostgreSQL, Redis,
+                        Kubernetes, and AWS in production, and you have explicit database
+                        and distributed-systems work behind them.
 
-  OWNERSHIP         78  █████████████████████████░░░░░░░
-                        You inherited an MVP and decided what to rebuild, which is the scope
-                        they are hiring for.
+  OWNERSHIP         93  ██████████████████████████████░░
+                        You led the move from a single-tenant monolith to a multi-tenant
+                        service, made storage and tracing decisions, ran on-call, and owned
+                        the platform end to end.
 
-  DELIVERY          85  ███████████████████████████░░░░░
-                        Three minutes to three seconds against a one-minute SLA is the kind
-                        of number that ends this conversation early.
+  DELIVERY          91  █████████████████████████████░░░
+                        You have concrete production numbers: around 400 customer
+                        organisations, p99 query latency from 4.2 seconds to 380
+                        milliseconds, and a 38% infra cut.
 
-  BUSINESS CONTEXT  45  ██████████████░░░░░░░░░░░░░░░░░░
-                        Application security is not a domain you have worked in, and their
-                        buyer's constraints will be unfamiliar.
+  BUSINESS CONTEXT  84  ███████████████████████████░░░░░
+                        You are adjacent rather than native: static analysis, linting, pre-
+                        commit tooling, and multi-tenant developer infrastructure are close
+                        to Semgrep, but you have not spent your career in AppSec as the
+                        product itself.
 
 WHY YOU FIT — WITH EVIDENCE
 
-  You have already run the migration they are most likely to attempt next.
-      "moved to self-managed Kubernetes"
-      claim: Kubernetes platform ownership
+  Semgrep's core product shape is close to the static-analysis tooling you built and kept
+  adopted.
+      "Built and maintained internal linting and pre-commit tooling across the company's
+      repositories, authored custom AST-based Python rules to catch unsafe database access
+      patterns, instrumented rule hit rates, and drove the false-positive rate down so the
+      tooling stayed adopted."
+      claim: Static analysis tooling
 
-  You can name the latency numbers, which is what a reliability-focused team probes for.
-      "end-to-end processing from about three minutes to about three seconds"
-      claim: Latency work with figures
+  Your event-driven backend work fits the workflow and reliability side of Semgrep's
+  roadmap.
+      "Rebuilt the nightly reconciliation job as an event-driven service, added idempotency
+      keys after a retry storm caused duplicate charges, and built the replay tooling and
+      guardrails that followed."
+      claim: Idempotent workflows
+
+  [... four more, each with the line from the CV it came from ...]
 
 GAPS
 
-  No application security background.
-      Their product is a static analysis tool for security teams, and the vocabulary of that
-      buyer is not in your record.
+  You are remote in Lisbon.
+      The role expects 3+ days per week in an office in San Francisco, New York, Boston, or
+      Denver unless they make a remote exception, so you need that conversation early.
 
-  No OCaml.
-      The analysis core is OCaml. The posting treats it as learnable, and the rest of the
-      stack is Python, so this matters less than it looks.
+  You have not shipped an AppSec product.
+      You have strong developer-tooling and static-analysis experience, but your record does
+      not show a security scanning product or code-risk workflow as the main business.
+
+  [... two more ...]
 
 WHAT TO PREPARE
 
-  - Have one incident story ready with the invariant you added afterwards.
-  - Learn what a false positive costs an AppSec team, in hours per week.
+  - Lead with the CI analytics migration story: monolith to multi-tenant Kubernetes,
+  ClickHouse plus PostgreSQL, p99 from 4.2 seconds to 380 milliseconds, and the 38% infra
+  spend reduction.
+  - Decide now what you will say about the hybrid requirement. If you cannot do 3+ days in
+  an office, say that cleanly before the loop goes deep.
+  [... three more ...]
 ```
 
-> That card is real output from the renderer, but its *contents* come from
-> `tests/fixtures/match.json` rather than from a live run — see
-> [DEBRIEF.md](DEBRIEF.md) for exactly what has and has not been executed
-> against the API. Once you have run `pytest --e2e`, replace this with the
-> genuine article.
-
+Every quote is verbatim from the CV. Any the model could not find there was
+dropped before the card was rendered.
 
 ## How it works
 

@@ -4,7 +4,9 @@ It produces files on disk. It never submits an application, opens a browser, or
 touches a job board account. That constraint is a product feature.
 """
 
-__version__ = "0.1.0"
+#: The single source of truth for the version. pyproject.toml reads this
+#: attribute, so there is nowhere for the two to disagree.
+__version__ = "0.1.1"
 
 # ---------------------------------------------------------------------------
 # What has actually been run against a live API.

@@ -341,3 +341,28 @@ def test_no_text_file_is_read_in_the_locale_encoding():
         if bare in line
     ]
     assert not offenders, f"{bare} without encoding=: {offenders}"
+
+
+def test_the_version_is_defined_in_exactly_one_place():
+    """pyproject reads __version__, so the two can never disagree.
+
+    They did once: a bump to pyproject alone left the CLI reporting the old
+    number while PyPI served the new one.
+    """
+    import re
+
+    pyproject = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
+    assert 'dynamic = ["version"]' in pyproject
+    assert 'attr = "pitches_peaches.__version__"' in pyproject
+    assert not re.search(r'^version = "', pyproject, re.M), (
+        "pyproject declares a literal version as well as a dynamic one"
+    )
+
+
+def test_the_publish_guard_reads_the_same_place_the_build_does():
+    """The tag/version guard must not grep a line that no longer exists."""
+    workflow = (ROOT / ".github/workflows/publish.yml").read_text(encoding="utf-8")
+    assert "src/pitches_peaches/__init__.py" in workflow, (
+        "the publish guard reads the version from somewhere other than the "
+        "single source, so it will silently compare against an empty string"
+    )

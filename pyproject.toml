@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pitches-peaches"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Turn a job posting and your CV into an interview prep dossier. It never applies to anything."
 readme = "README.md"
 requires-python = ">=3.14"
@@ -41,6 +41,9 @@ Issues = "https://github.com/NEkropo1/pitches-peaches/issues"
 
 [project.scripts]
 peaches = "pitches_peaches.cli:main"
+
+[tool.setuptools.dynamic]
+version = { attr = "pitches_peaches.__version__" }
 
 [tool.setuptools.packages.find]
 where = ["src"]
