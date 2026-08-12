@@ -17,8 +17,23 @@ PEACHES_PROVIDER=openai plus OPENAI_API_KEY needs no flags at all.
 from __future__ import annotations
 
 import os
+from pathlib import Path
 
 import pytest
+
+REPO_ROOT = Path(__file__).parent.parent
+
+
+def repo_only(*paths: str) -> None:
+    """Skip a check whose subject only exists in a source checkout.
+
+    The sdist carries the suite so it can prove itself, but not the whole
+    repository — CI config, for one. A test that reads such a file has nothing
+    to assert there, and it is the tarball that is incomplete, not the code.
+    """
+    missing = [path for path in paths if not (REPO_ROOT / path).exists()]
+    if missing:
+        pytest.skip(f"not a source checkout: {', '.join(missing)} is absent")
 
 
 def pytest_addoption(parser: pytest.Parser) -> None:

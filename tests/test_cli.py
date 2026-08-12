@@ -361,6 +361,9 @@ def test_the_version_is_defined_in_exactly_one_place():
 
 def test_the_publish_guard_reads_the_same_place_the_build_does():
     """The tag/version guard must not grep a line that no longer exists."""
+    from conftest import repo_only
+
+    repo_only(".github/workflows/publish.yml")
     workflow = (ROOT / ".github/workflows/publish.yml").read_text(encoding="utf-8")
     assert "src/pitches_peaches/__init__.py" in workflow, (
         "the publish guard reads the version from somewhere other than the "
