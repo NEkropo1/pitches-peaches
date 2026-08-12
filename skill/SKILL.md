@@ -13,10 +13,18 @@ description: >-
 
 Shell out to the `peaches` CLI. It does the work; this file only drives it.
 
-Check it is installed with `peaches version`; if not, `uv tool install
-pitches-peaches`. `ANTHROPIC_API_KEY` must be in the environment — never ask
-the user to paste a key into the chat; tell them to export it or put it in
-`.env` in the run directory.
+Check it is installed with `peaches version`, which also prints what has been
+tested; if not, `uv tool install pitches-peaches`.
+
+**v0.1.0 is verified only on `openai` with `gpt-5.4-mini`.** The Anthropic and
+Gemini providers, PDF CVs, and audio are written but have never made a live
+call. If the user is relying on one of those, say so — do not present them as
+proven.
+
+One provider key (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY` or `GEMINI_API_KEY`)
+must be in the environment; the provider is picked from whichever is set. Never
+ask the user to paste a key into the chat — tell them to export it, or put it
+in `.env` in the run directory.
 
 ## Run it
 
@@ -28,10 +36,9 @@ both. Use one run directory per application:
 peaches run <url-or-file> --cv <cv-path> -C runs/<company>
 ```
 
-The run is interactive. It asks the user follow-up questions about their own
-background, then asks whether to proceed — let those prompts reach the user,
-do not answer on their behalf. `--non-interactive` skips them and marks the fit
-card provisional. `--audio` adds narration scripts and synthesized audio.
+The run is interactive: it asks the user about their own background, then
+whether to proceed. Let those prompts reach the user, do not answer on their
+behalf. `--non-interactive` skips them and marks the card provisional.
 
 ## If a stage fails
 
@@ -53,7 +60,7 @@ Errors name the command that fixes them. Follow that, do not improvise.
 Point the user at `<dir>/00-README.md`, which indexes everything, and
 `<dir>/fit.html` for the score card.
 
-If the gate recommended not applying, the run stops there by design. Report
-that plainly with the "build first" list; do not re-run with `--force` unless
-asked. Two things to state accurately: the tool never applies to anything or
-contacts anyone, and it takes what the user says about themselves as true.
+If the gate recommended not applying, the run stops there by design. Report that
+plainly with the "build first" list; do not re-run with `--force` unless asked.
+Two things to state accurately: the tool never applies to anything or contacts
+anyone, and it takes what the user says about themselves as true.

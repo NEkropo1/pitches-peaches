@@ -15,6 +15,26 @@ peaches run https://the-job-posting --cv ~/cv.pdf -C runs/acme
 
 It is provider-agnostic: set whichever key you have and it uses that one.
 
+> ### ⚠️ v0.1.0: what has actually been run
+>
+> The full six-stage pipeline has been verified end to end on **OpenAI only**,
+> with **`gpt-5.4-mini`**, in one configuration: non-interactive, no audio, a
+> JSON CV.
+>
+> Everything else is written and unit tested — 176 offline tests — but has
+> **never made a live API call**. That includes:
+>
+> - the **Anthropic and Gemini providers**
+> - any model other than `gpt-5.4-mini`
+> - **PDF CVs** (the verified run used a JSON CV)
+> - the **interactive** probe loop and gate prompt
+> - **audio** rendering, and both TTS backends
+>
+> Treat those as unproven rather than broken — the code may well work, it just
+> has not been watched working. The CLI says so at runtime when you are on an
+> unverified combination, and `peaches version` prints this list.
+> [DEBRIEF.md](DEBRIEF.md) has the precise state of each.
+
 No uv? `curl -LsSf https://raw.githubusercontent.com/nekropol/pitches-peaches/main/install.sh | sh`
 (or `install.ps1` on Windows) installs uv and then the tool. Nothing else.
 
@@ -267,7 +287,8 @@ use it; having no key at all lists every option with the full path of the
 All three ground stage 1 with their own server-side web search — Anthropic's
 `web_search_20260209`, OpenAI's `web_search` tool on the Responses API, and
 Gemini's Google Search grounding. That is the one call shape where the three
-genuinely differ, so it is the first thing to check when adding a fourth.
+genuinely differ, so it is the first thing to check when adding a fourth. Only
+the OpenAI one has been confirmed working against the live API.
 
 Adding a provider is [one file](src/pitches_peaches/providers/), the same shape
 as the TTS backends: `parse`, `write`, `research`, plus `available()`. The e2e
@@ -304,9 +325,22 @@ pytest
 ```
 
 The tests cover the deterministic parts — schema validators, the state machine,
-quote verification, score banding, config precedence, TTS normalization, and
-card rendering. None of them need network or an API key, and there are no
-mock-the-LLM tests asserting on model output, because those test the mock.
+quote verification, score banding, config precedence, `.env` parsing, TTS
+normalization, provider resolution, and card rendering. None of them need
+network or an API key, and there are no mock-the-LLM tests asserting on model
+output, because those test the mock.
+
+The live tests are opt-in, because they cost money:
+
+```bash
+pytest --e2e -k smoke                  # one cheap call
+pytest --e2e                           # the full pipeline
+pytest --e2e --provider anthropic      # prove a provider this release has not
+```
+
+They assert on structure only, so the same suite is the conformance test for a
+provider: `--provider X` passing means that backend is wired correctly. That is
+how the box at the top of this README gets shorter.
 
 ## Licence
 

@@ -116,3 +116,71 @@ def test_help_leads_with_the_constraint():
     result = runner.invoke(app, ["--help"])
     # Rich wraps and pads the help text, so compare on collapsed whitespace.
     assert "never applies to anything" in re.sub(r"\s+", " ", result.output)
+
+
+# -- the honesty notice must not drift from the code ------------------------
+
+from pathlib import Path  # noqa: E402
+
+import pitches_peaches  # noqa: E402
+
+ROOT = Path(__file__).parent.parent
+
+
+def test_version_command_prints_what_is_verified():
+    result = runner.invoke(app, ["version"])
+    assert result.exit_code == 0
+    assert pitches_peaches.__version__ in result.output
+    assert pitches_peaches.VERIFIED_PROVIDER in result.output
+    assert pitches_peaches.VERIFIED_MODEL in result.output
+    for path in pitches_peaches.UNVERIFIED_PATHS:
+        # rich wraps, so compare on collapsed whitespace
+        assert " ".join(path.split()) in " ".join(result.output.split())
+
+
+@pytest.mark.parametrize("doc", ["README.md", "skill/SKILL.md"])
+def test_docs_name_the_same_verified_combination_as_the_code(doc):
+    """If someone bumps VERIFIED_MODEL, these fail until the docs follow."""
+    text = (ROOT / doc).read_text()
+    assert pitches_peaches.VERIFIED_MODEL in text, (
+        f"{doc} does not mention the verified model "
+        f"({pitches_peaches.VERIFIED_MODEL}); it will mislead people."
+    )
+    assert pitches_peaches.VERIFIED_PROVIDER in text
+
+
+def test_readme_states_the_version_it_is_making_claims_about():
+    text = (ROOT / "README.md").read_text()
+    assert f"v{pitches_peaches.__version__}" in text
+
+
+def test_readme_names_every_unproven_path():
+    text = " ".join((ROOT / "README.md").read_text().split()).lower()
+    for fragment in ("anthropic and gemini", "pdf cv", "interactive", "audio"):
+        assert fragment in text, f"README does not flag {fragment!r} as unproven"
+
+
+def test_running_on_an_unverified_combination_warns(tmp_path, monkeypatch):
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "x")
+    runner.invoke(app, ["init", "-C", str(tmp_path)])
+    for name in ("recon.json", "match.json"):
+        (tmp_path / name).write_text("{}")
+    result = runner.invoke(app, ["render", "-C", str(tmp_path)])
+    output = " ".join(result.output.split())
+    assert "has only been run end to end" in output
+    assert pitches_peaches.VERIFIED_MODEL in output
+
+
+def test_the_verified_combination_does_not_warn(tmp_path, monkeypatch):
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.setenv("OPENAI_API_KEY", "x")
+    runner.invoke(app, ["init", "-C", str(tmp_path)])
+    for name in ("recon.json", "match.json"):
+        (tmp_path / name).write_text("{}")
+    result = runner.invoke(
+        app,
+        ["render", "-C", str(tmp_path), "--provider", pitches_peaches.VERIFIED_PROVIDER,
+         "--model", pitches_peaches.VERIFIED_MODEL],
+    )
+    assert "has only been run end to end" not in " ".join(result.output.split())

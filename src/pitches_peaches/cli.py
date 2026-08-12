@@ -14,7 +14,13 @@ from typing import Optional
 import typer
 from rich.console import Console
 
-from . import __version__
+from . import (
+    VERIFIED_MODEL,
+    VERIFIED_PROVIDER,
+    __version__,
+    is_verified,
+    verification_notice,
+)
 from .config import (
     CONFIG_FILE,
     CONFIG_TEMPLATE,
@@ -105,7 +111,24 @@ def _llm(workdir: Path, *, needs: tuple[str, ...] = (), **overrides) -> LLM:
     )
     if config.provider.strip().lower() in ("", "auto"):
         console.print(f"[dim]using {resolution.describe()} — {resolution.reason}[/dim]")
+    _warn_if_unverified(resolution)
     return LLM.from_resolution(config, resolution)
+
+
+def _warn_if_unverified(resolution: "providers.Resolution") -> None:
+    """Say so, once, when the run is on a combination nobody has proven.
+
+    Not a nag and not a blocker — the code may well work. It just has not been
+    watched working, and a person about to spend money on a dossier they will
+    walk into an interview with deserves to know which of those it is.
+    """
+    if is_verified(resolution.name, resolution.model):
+        return
+    console.print(
+        f"[yellow]note:[/yellow] [dim]v{__version__} has only been run end to end on "
+        f"{VERIFIED_PROVIDER}/{VERIFIED_MODEL}. "
+        f"{resolution.describe()} is unproven — see DEBRIEF.md.[/dim]"
+    )
 
 
 def _report(message: str) -> None:
@@ -465,8 +488,18 @@ def run(
 
 @app.command()
 def version() -> None:
-    """Print the version."""
+    """Print the version, and what has actually been tested."""
     console.print(f"pitches-peaches {__version__}")
+    console.print()
+    console.print(f"[bold]Verified:[/bold] {VERIFIED_PROVIDER}/{VERIFIED_MODEL}, "
+                  "full pipeline, non-interactive, no audio.")
+    console.print("[bold]Unproven[/bold] (written and unit tested, never run live):")
+    from . import UNVERIFIED_PATHS
+
+    for path in UNVERIFIED_PATHS:
+        console.print(f"  - {path}")
+    console.print()
+    console.print("[dim]Details: DEBRIEF.md[/dim]")
 
 
 def main() -> None:
