@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # The tool claims to be cross-platform, so prove it rather than hope.
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install
+        run: uv sync --extra dev --python ${{ matrix.python-version }}
+
+      # No network, no API key. The e2e suite is skipped unless --e2e is
+      # passed, which CI deliberately never does — it costs real money.
+      - name: Test
+        run: uv run --python ${{ matrix.python-version }} pytest -q
+
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+
+      - name: Build
+        run: uv build
+
+      # Catches a README that PyPI would reject, before a tag exists.
+      - name: Check the distribution metadata
+        run: uvx twine check dist/*
+
+      - name: Install the wheel in a clean environment
+        run: |
+          uv venv /tmp/fresh
+          uv pip install --python /tmp/fresh dist/*.whl
+          /tmp/fresh/bin/peaches version
+          # Prompts are package data; a wheel missing them fails only at runtime.
+          /tmp/fresh/bin/python -c "
+          from pitches_peaches.prompts import render
+          assert 'self-reported' in render('match', recon='{}', profile='{}')
+          print('prompts load from the installed wheel')
+          "
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/

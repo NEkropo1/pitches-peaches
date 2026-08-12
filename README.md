@@ -1,5 +1,8 @@
 # PitchesPeaches
 
+[![CI](https://github.com/nekropol/pitches-peaches/actions/workflows/ci.yml/badge.svg)](https://github.com/nekropol/pitches-peaches/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 Give it a job posting and your CV, and it writes you a prep dossier: markdown
 files with mermaid diagrams, a fit card you open in a browser, and optionally
 audio you can listen to on a walk. It never applies to anything. It does not

@@ -1,0 +1,66 @@
+name: Publish
+
+# Publishing is deliberately manual-ish: it fires only on a version tag you
+# push on purpose, never on a merge to main.
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+
+      - name: Refuse to publish a tag that disagrees with the code
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          CODE=$(grep -oE '^version = "[^"]+"' pyproject.toml | cut -d'"' -f2)
+          if [ "$TAG" != "$CODE" ]; then
+            echo "tag $GITHUB_REF_NAME does not match pyproject version $CODE" >&2
+            exit 1
+          fi
+
+      - name: Test before shipping
+        run: |
+          uv sync --extra dev
+          uv run pytest -q
+
+      - run: uv build
+      - run: uvx twine check dist/*
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  pypi:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      # Trusted Publishing: PyPI verifies this workflow's OIDC identity, so
+      # there is no API token to store, leak, or rotate.
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1
+
+  release:
+    needs: pypi
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          generate_release_notes: true
