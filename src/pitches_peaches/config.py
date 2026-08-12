@@ -19,15 +19,18 @@ except ModuleNotFoundError:  # pragma: no cover
 ENV_PREFIX = "PEACHES_"
 CONFIG_FILE = "peaches.toml"
 
-DEFAULT_MODEL = "claude-opus-5"
+DEFAULT_PROVIDER = "anthropic"
+#: "auto" means "this provider's default model", resolved in llm.LLM.model.
+DEFAULT_MODEL = "auto"
 DEFAULT_EFFORT = "high"
 
 CONFIG_TEMPLATE = """\
 # peaches.toml — every knob PitchesPeaches has.
 # Precedence: CLI flag > environment variable > this file > built-in default.
-# ANTHROPIC_API_KEY is never written here. Put it in .env or your shell.
+# API keys are never written here. Put them in .env or your shell.
 
-model = "claude-opus-5"          # PEACHES_MODEL — any Claude model id
+provider = "anthropic"           # PEACHES_PROVIDER — anthropic|openai|gemini|auto
+model = "auto"                   # PEACHES_MODEL — "auto" = this provider's default
 effort = "high"                  # PEACHES_EFFORT — low|medium|high|xhigh|max
 parse_effort = "medium"          # PEACHES_PARSE_EFFORT — effort for the parsing stages
 max_technologies = 3             # PEACHES_MAX_TECHNOLOGIES — cap on playbook tech blocks
@@ -52,6 +55,7 @@ _BOOLS = {"1": True, "true": True, "yes": True, "on": True,
 
 @dataclass
 class Config:
+    provider: str = DEFAULT_PROVIDER
     model: str = DEFAULT_MODEL
     effort: str = DEFAULT_EFFORT
     parse_effort: str = "medium"
@@ -115,5 +119,11 @@ def load_dotenv(workdir: Path) -> None:
         os.environ.setdefault(key, value)
 
 
-def api_key_present() -> bool:
-    return bool(os.environ.get("ANTHROPIC_API_KEY"))
+def api_key_present(provider: str = "anthropic") -> bool:
+    """True when the credential the chosen provider needs is set."""
+    from .providers import select
+
+    try:
+        return select(provider).available()
+    except Exception:
+        return False

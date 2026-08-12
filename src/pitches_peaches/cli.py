@@ -23,6 +23,7 @@ from .config import (
     api_key_present,
     load_dotenv,
 )
+from . import providers
 from .llm import LLM, LLMError
 from .prompts import PromptError
 from .state import RunState, StageError
@@ -97,10 +98,11 @@ def _llm(workdir: Path, *, needs: tuple[str, ...] = (), **overrides) -> LLM:
     config = _cfg(workdir, **overrides)
     if needs:
         RunState.load(workdir).require(*needs)
-    if not api_key_present():
+    if not api_key_present(config.provider):
+        key = providers.select(config.provider).env_key
         raise StageError(
-            "ANTHROPIC_API_KEY is not set. Export it, or put it in .env in "
-            f"{workdir}. It is the only credential this tool needs."
+            f"{key} is not set. Export it, or put it in .env in {workdir}. "
+            f"It is the only credential the {config.provider} provider needs."
         )
     return LLM(config)
 
@@ -144,6 +146,9 @@ WorkdirOpt = typer.Option(
     Path("."), "--workdir", "-C", help="The run directory.", show_default=".",
 )
 ModelOpt = typer.Option(None, "--model", help="Override the model id.")
+ProviderOpt = typer.Option(
+    None, "--provider", help="anthropic|openai|gemini|auto"
+)
 EffortOpt = typer.Option(None, "--effort", help="low|medium|high|xhigh|max")
 
 
@@ -175,9 +180,11 @@ def init(workdir: Path = WorkdirOpt) -> None:
         console.print("  (everything was already there)")
 
     console.print()
-    if not api_key_present():
-        console.print("Set your key, then run recon:")
-        console.print("  [bold]export ANTHROPIC_API_KEY=sk-ant-...[/bold]")
+    config = _cfg(workdir)
+    if not api_key_present(config.provider):
+        key = providers.select(config.provider).env_key
+        console.print(f"Set your key ({config.provider}), then run recon:")
+        console.print(f"  [bold]export {key}=...[/bold]")
     console.print(
         "  [bold]peaches run https://the-job-posting --cv ~/cv.pdf[/bold]"
     )
@@ -192,6 +199,7 @@ def recon(
     posting: Optional[str] = typer.Option(None, "--posting", help="Extra pasted posting text, as a file."),
     model: Optional[str] = ModelOpt,
     effort: Optional[str] = EffortOpt,
+    provider: Optional[str] = ProviderOpt,
 ) -> None:
     """Research the company. Writes recon.json and 01-company.md."""
     from .stages import recon as stage
@@ -200,7 +208,7 @@ def recon(
         state = RunState.load_or_create(workdir)
         result = stage.run(
             state,
-            _llm(workdir, model=model, effort=effort),
+            _llm(workdir, model=model, effort=effort, provider=provider),
             target,
             company=company,
             posting_file=posting,
@@ -222,6 +230,7 @@ def profile(
     workdir: Path = WorkdirOpt,
     notes: Optional[str] = typer.Option(None, "--notes", help="Extra context about you, as a file."),
     model: Optional[str] = ModelOpt,
+    provider: Optional[str] = ProviderOpt,
 ) -> None:
     """Parse your CV. Writes profile.json."""
     from .stages import profile as stage
@@ -229,7 +238,7 @@ def profile(
     try:
         state = RunState.load_or_create(workdir)
         result = stage.run(
-            state, _llm(workdir, model=model), cv, notes_path=notes, report=_step
+            state, _llm(workdir, model=model, provider=provider), cv, notes_path=notes, report=_step
         )
     except (StageError, LLMError, PromptError, FileNotFoundError, ValueError) as exc:
         _fail(exc)
@@ -249,6 +258,7 @@ def match(
     notes: Optional[str] = typer.Option(None, "--notes", help="Extra context up front, as a file."),
     model: Optional[str] = ModelOpt,
     effort: Optional[str] = EffortOpt,
+    provider: Optional[str] = ProviderOpt,
 ) -> None:
     """Score the role against you. Writes match.json and 02-fit.md."""
     from .cards import terminal_lines
@@ -258,7 +268,7 @@ def match(
         state = RunState.load(workdir)
         result = stage.run(
             state,
-            _llm(workdir, needs=("recon.json", "profile.json"), model=model, effort=effort),
+            _llm(workdir, needs=("recon.json", "profile.json"), model=model, effort=effort, provider=provider),
             interactive=not non_interactive,
             notes_path=notes,
             report=_report,
@@ -285,6 +295,7 @@ def gate(
     assume: Optional[str] = typer.Option(None, "--assume", help="proceed|declined — record a decision without asking."),
     model: Optional[str] = ModelOpt,
     effort: Optional[str] = EffortOpt,
+    provider: Optional[str] = ProviderOpt,
 ) -> None:
     """Should you apply? Records your decision in run.json."""
     from .stages import gate as stage
@@ -293,7 +304,7 @@ def gate(
         state = RunState.load(workdir)
         _, decision = stage.run(
             state,
-            _llm(workdir, needs=("recon.json", "match.json"), model=model, effort=effort),
+            _llm(workdir, needs=("recon.json", "match.json"), model=model, effort=effort, provider=provider),
             interactive=not non_interactive,
             assume=assume,
             report=_report,
@@ -312,6 +323,7 @@ def playbook(
     force: bool = typer.Option(False, "--force", help="Build it even though you declined at the gate."),
     model: Optional[str] = ModelOpt,
     effort: Optional[str] = EffortOpt,
+    provider: Optional[str] = ProviderOpt,
 ) -> None:
     """Questions and reference answers. Writes playbook.json and 03-playbook.md."""
     from .stages import playbook as stage
@@ -325,6 +337,7 @@ def playbook(
                 needs=("recon.json", "profile.json", "match.json"),
                 model=model,
                 effort=effort,
+                provider=provider,
             ),
             force=force,
             report=_step,
@@ -344,6 +357,7 @@ def render(
     voice: Optional[str] = typer.Option(None, "--voice"),
     rate: Optional[int] = typer.Option(None, "--rate", help="Words per minute."),
     model: Optional[str] = ModelOpt,
+    provider: Optional[str] = ProviderOpt,
 ) -> None:
     """Diagrams, the index, fit.html, and optionally audio."""
     from .stages import render as stage
@@ -356,6 +370,7 @@ def render(
                 workdir,
                 needs=("recon.json", "match.json"),
                 model=model,
+                provider=provider,
                 tts_backend=tts_backend,
                 voice=voice,
                 rate=rate,
@@ -381,6 +396,7 @@ def run(
     force: bool = typer.Option(False, "--force", help="Build the playbook even on a declined gate."),
     model: Optional[str] = ModelOpt,
     effort: Optional[str] = EffortOpt,
+    provider: Optional[str] = ProviderOpt,
 ) -> None:
     """All six stages, in order."""
     from .cards import terminal_lines
@@ -394,7 +410,7 @@ def run(
     interactive = not non_interactive
     try:
         state = RunState.load_or_create(workdir)
-        llm = _llm(workdir, model=model, effort=effort)
+        llm = _llm(workdir, model=model, effort=effort, provider=provider)
 
         console.rule("[bold]recon")
         recon_result = recon_stage.run(

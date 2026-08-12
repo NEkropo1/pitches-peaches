@@ -3,10 +3,15 @@
 Everything in the default suite is deterministic and offline. The e2e tests
 spend real money, so they are skipped unless you ask for them:
 
-    pytest                  # offline suite only
-    pytest --e2e            # everything, including live API calls
-    pytest --e2e -k smoke   # just the cheap live check
-    PEACHES_E2E=1 pytest    # same as --e2e, for CI environment config
+    pytest                                # offline suite only
+    pytest --e2e                          # everything, live, on Anthropic
+    pytest --e2e -k smoke                 # just the cheap live check
+    pytest --e2e --provider openai        # the same suite against OpenAI
+    pytest --e2e --provider gemini
+    PEACHES_E2E=1 pytest                  # same as --e2e, for CI config
+
+The provider is also read from PEACHES_PROVIDER, so a .env with
+PEACHES_PROVIDER=openai plus OPENAI_API_KEY needs no flags at all.
 """
 
 from __future__ import annotations
@@ -21,7 +26,19 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         "--e2e",
         action="store_true",
         default=False,
-        help="Run end-to-end tests that call the Anthropic API and cost money.",
+        help="Run end-to-end tests that call a provider API and cost money.",
+    )
+    parser.addoption(
+        "--provider",
+        action="store",
+        default=None,
+        help="Which provider the e2e tests use: anthropic|openai|gemini|auto.",
+    )
+    parser.addoption(
+        "--e2e-model",
+        action="store",
+        default=None,
+        help="Override the model for the e2e tests (default: the provider's).",
     )
 
 
@@ -39,13 +56,29 @@ def _enabled(config: pytest.Config) -> bool:
     }
 
 
+def e2e_provider(config: pytest.Config) -> str:
+    return (
+        config.getoption("--provider")
+        or os.environ.get("PEACHES_PROVIDER")
+        or "anthropic"
+    )
+
+
 def pytest_collection_modifyitems(
     config: pytest.Config, items: list[pytest.Item]
 ) -> None:
     if _enabled(config):
-        if not os.environ.get("ANTHROPIC_API_KEY"):
+        from pitches_peaches.providers import select
+
+        name = e2e_provider(config)
+        try:
+            provider = select(name)
+            ok, key = provider.available(), provider.env_key
+        except Exception as exc:
+            ok, key = False, str(exc)
+        if not ok:
             skip = pytest.mark.skip(
-                reason="--e2e given but ANTHROPIC_API_KEY is not set"
+                reason=f"--e2e --provider {name} given but {key} is not set"
             )
             for item in items:
                 if "e2e" in item.keywords:

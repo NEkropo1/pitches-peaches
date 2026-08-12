@@ -1,10 +1,11 @@
 # Debrief
 
-Written at the end of the first build. The headline: **no stage has ever run
-against the live Anthropic API.** There was no key in the environment and no
-`ant` profile, so every model-facing code path in this repo is unexecuted. The
-deterministic half is tested properly; the half that talks to Anthropic is
-written from the SDK's documented and source-verified surface, and nothing more.
+Updated after the multi-provider work. The headline is unchanged: **no stage
+has ever run against a live API — on any provider.** No usable credential was
+available, so every model-facing code path in this repo is unexecuted. The
+deterministic half is tested properly; the half that talks to a model is
+written against SDK surfaces verified by introspecting the installed packages,
+and nothing more.
 
 Read this as the to-do list for the first session that has a key.
 
@@ -12,7 +13,7 @@ Read this as the to-do list for the first session that has a key.
 
 ## 1. What is actually verified
 
-98 offline tests pass. They cover, genuinely:
+147 offline tests pass. They cover, genuinely:
 
 | Area | File | What is pinned |
 |---|---|---|
@@ -25,6 +26,7 @@ Read this as the to-do list for the first session that has a key.
 | TTS normalization | `test_tts.py` | acronyms, lexicon, symbols, pause markers, `[[...]]` injection neutralized, duration estimates |
 | Card rendering | `test_cards.py` | three surfaces agree on the numbers; HTML self-contained and escaped; fixed-width terminal output |
 | CLI | `test_cli.py` | init idempotent and complete; out-of-order stages name the right fix; dependency errors precede the key error |
+| Providers | `test_providers.py` | registry and `auto` selection; per-provider model defaulting; effort clamping; content-part conversion for all three; the three grounding result walkers; schema portability against the real OpenAI and Gemini SDKs |
 
 Two real bugs were caught by writing those tests, not by reading the code: the
 `{{pause:900}}` / `{{placeholder}}` delimiter collision, and unwrapped terminal
@@ -51,6 +53,15 @@ Everything below has never made or handled a real API response.
   skipped.
 - **Every prompt.** Not one has been through a model. This is the biggest
   unknown in the project by a wide margin; see §4.
+- **The OpenAI and Gemini providers, entirely.** Their SDK surfaces were
+  introspected against the installed packages (`openai` 3.0.0, `google-genai`
+  2.17.0) rather than written from memory — signatures, parameter names, tool
+  types, and effort enums are all confirmed to exist. What is *not* confirmed is
+  runtime behaviour: whether the streaming event names fire as expected, whether
+  the grounding result walkers read the right fields on a real response, and
+  whether `gpt-5.4-mini` / `gemini-3-pro` are correct model ids for your
+  accounts. Both walkers are unit-tested against hand-built response objects, so
+  the logic is right *if* the shapes are.
 - **Both TTS backends.** `kokoro` is not installed here and `say` was never
   invoked. The kokoro segment/silence concatenation is the least certain part —
   I am not confident `KPipeline(...)` yields `(gs, ps, audio)` triples in the
@@ -60,15 +71,23 @@ Everything below has never made or handled a real API response.
 ## 3. Run this first
 
 ```bash
-cp .env.sample runs/probe/.env    # fill in ANTHROPIC_API_KEY
+cp .env.sample runs/probe/.env    # fill in one provider key
 cd runs/probe && peaches init
 
-# cheapest possible proof of life — one small parse call, ~$0.05
-pytest --e2e -k smoke
+# cheapest possible proof of life — one small parse call
+pytest --e2e -k smoke                       # anthropic
+pytest --e2e -k smoke --provider openai     # openai
+pytest --e2e -k smoke --provider gemini     # gemini
 
 # then the whole thing, ~$2-5
-pytest --e2e
+pytest --e2e --provider openai
 ```
+
+The smoke test is the one to run first against each provider: it is the
+cheapest thing that fails when a credential, a model id, or a structured-output
+binding is wrong. If `--e2e --provider X` passes in full, that backend is
+correctly wired — the suite asserts only on structure, so it doubles as the
+provider conformance test.
 
 The e2e test asserts on structure and invariants only — artifacts exist, schemas
 survive a real round trip, verified claims carry sources, surviving quotes are
@@ -99,12 +118,43 @@ fixture is an invented person, since this repo is public.
    from a well-documented company. A three-line posting from a company with no
    web presence is the real stress case, and `Recon` requires both readings and
    at least a company name. Worth a second e2e fixture.
-5. **PDF CVs.** `cv-source.txt` is written empty for a PDF, so quote
+5. **Provider-specific unknowns.** For OpenAI: whether
+   `response.output_text.delta` is the right event name for visible text on
+   your SDK version (if it is not, `write()` falls back to `output_text` on the
+   final response, so it degrades to non-streaming rather than failing), and
+   whether `web_search_call.action.query` is populated. For Gemini: whether
+   grounding metadata arrives on streamed events or only on the final one — if
+   sources come back empty but the prose is grounded, that is the cause, and
+   the fix is to read `grounding_metadata` off the final aggregated response
+   instead. The e2e test asserts `state.stages["recon"]["sources"]` is
+   non-empty precisely to catch this.
+6. **PDF CVs.** `cv-source.txt` is written empty for a PDF, so quote
    verification falls back to matching against `profile.json`. That means a
    quote is checked against the model's own extraction rather than the source
    document — weaker than for text CVs, and worth knowing before trusting it.
 
-## 5. Refactors I would consider, once it runs
+## 5. Multi-provider notes
+
+Two things I got wrong when scoping this, corrected after checking:
+
+- I expected the Pydantic schemas to need per-provider transformation, because
+  of `Field(ge=0, le=100)` and 19 optional fields. They do not. The OpenAI SDK's
+  `to_strict_json_schema` preserves `minimum`/`maximum` and rewrites optionals
+  as nullable-required; `google-genai` accepts the model class directly as
+  `response_schema`. All six schemas convert cleanly for both — there is a test
+  for it (`test_providers.py`), which is cheap and will catch it if a future
+  schema change breaks portability.
+- The effort ladders line up better than expected. OpenAI accepts the same
+  `low`/`medium`/`high`/`xhigh`/`max` as Anthropic. Only Gemini needs mapping,
+  and `clamp_effort` steps down rather than erroring so the same command works
+  on all three.
+
+The genuinely provider-specific part is grounding, as expected: three different
+tool declarations, three different result shapes, three different citation
+fields. That is why `research()` is the one call shape with a real per-provider
+implementation, and why the e2e test checks that sources came back at all.
+
+## 6. Refactors I would consider, once it runs
 
 None of these are worth doing before you have seen real output.
 
@@ -126,7 +176,7 @@ None of these are worth doing before you have seen real output.
   Works, slightly clever. Pydantic would be plainer given it is already a
   dependency.
 
-## 6. Known gaps against the brief
+## 7. Known gaps against the brief
 
 - **The full pipeline has not been run end to end, and no output is attached.**
   This is the brief's explicit final requirement and it is not met.
@@ -139,7 +189,7 @@ None of these are worth doing before you have seen real output.
   the first real run — `run.json` does not record token usage today, and
   probably should.
 
-## 7. Environment note
+## 8. Environment note
 
 `uv` is installed via mise on this machine but has no global version pinned, so
 bare `uv` fails. Either `mise use -g uv@0.10.11`, or keep prefixing with

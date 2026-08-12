@@ -16,7 +16,7 @@ import json
 from pathlib import Path
 from typing import Any, Callable
 
-from ..llm import LLM, pdf_block, text_block
+from ..llm import PDF, LLM, Text
 from ..models import Profile
 from ..prompts import render
 from ..state import RunState
@@ -26,7 +26,7 @@ Reporter = Callable[[str], None]
 TEXT_SUFFIXES = {".md", ".txt", ".markdown", ".rst", ""}
 
 
-def _cv_content(path: Path) -> tuple[list[dict[str, Any]], str]:
+def _cv_content(path: Path) -> tuple[list[Any], str]:
     """Return (content blocks for the API, plain text for quote checking).
 
     The plain text is what quote verification runs against later. For a PDF we
@@ -37,7 +37,7 @@ def _cv_content(path: Path) -> tuple[list[dict[str, Any]], str]:
 
     if suffix == ".pdf":
         return (
-            [pdf_block(path), text_block("The CV is the attached PDF.")],
+            [PDF(path), Text("The CV is the attached PDF.")],
             "",
         )
 
@@ -53,7 +53,7 @@ def _cv_content(path: Path) -> tuple[list[dict[str, Any]], str]:
             f"cannot read a CV from {path.suffix or 'a file with no extension'}. "
             "Supported: .json, .md, .txt, .pdf"
         )
-    return [text_block(raw)], raw
+    return [Text(raw)], raw
 
 
 def run(
@@ -76,7 +76,7 @@ def run(
         if note_text:
             extra_notes.append(note_text)
             blocks.append(
-                text_block(
+                Text(
                     "\n--- extra context the reader supplied about themselves "
                     "(true, same standing as the CV) ---\n" + note_text
                 )

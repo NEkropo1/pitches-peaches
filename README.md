@@ -211,7 +211,8 @@ Precedence is **flag > environment variable > `peaches.toml` > default**.
 
 | Key | Env | Default | What it does |
 |---|---|---|---|
-| `model` | `PEACHES_MODEL` | `claude-opus-5` | Any Claude model id. |
+| `provider` | `PEACHES_PROVIDER` | `anthropic` | `anthropic`, `openai`, `gemini`, or `auto`. |
+| `model` | `PEACHES_MODEL` | `auto` | `auto` means the provider's default. |
 | `effort` | `PEACHES_EFFORT` | `high` | `low`–`max`, for recon and playbook. |
 | `parse_effort` | `PEACHES_PARSE_EFFORT` | `medium` | Effort for the parsing stages. |
 | `max_technologies` | `PEACHES_MAX_TECHNOLOGIES` | `3` | Cap on playbook technology blocks. |
@@ -221,29 +222,63 @@ Precedence is **flag > environment variable > `peaches.toml` > default**.
 | `voice` | `PEACHES_VOICE` | `af_heart` | Kokoro voice id, or a macOS `say` voice. |
 | `rate` | `PEACHES_RATE` | `178` | Words per minute. ~150 slow, ~180 brisk. |
 
-`ANTHROPIC_API_KEY` is the only credential, and the only value never written to
-a config file. Put it in your environment or in `.env` in the run directory;
-`peaches init` adds `.env` to the generated `.gitignore`.
+One provider key is the only credential, and the only value never written to a
+config file. Put it in your environment or in `.env` in the run directory;
+`peaches init` adds `.env` to the generated `.gitignore`. Copy
+[`.env.sample`](.env.sample) to get started.
 
 The prompts live in `pitches_peaches/prompts/*.md` and are loaded at runtime,
 so you can tune the voice of your own dossiers without touching Python.
 
+## Providers
+
+Anthropic by default; OpenAI and Gemini are one flag away.
+
+```bash
+uv tool install "pitches-peaches[all-providers]"
+
+peaches run <posting> --cv ~/cv.pdf --provider openai
+peaches run <posting> --cv ~/cv.pdf --provider gemini
+peaches run <posting> --cv ~/cv.pdf --provider auto     # whichever key is set
+```
+
+You do not also have to change `--model`: it defaults to `auto`, which resolves
+to that provider's default (`claude-opus-5`, `gpt-5.4-mini`, `gemini-3-pro`).
+Set one explicitly and it is never overridden.
+
+`--effort` means the same thing on Anthropic and OpenAI — both take
+`low` through `max`. Gemini's thinking ladder stops at `high`, so `xhigh` and
+`max` step down to it rather than erroring; the same command works everywhere.
+
+All three ground stage 1 with their own server-side web search — Anthropic's
+`web_search_20260209`, OpenAI's `web_search` tool on the Responses API, and
+Gemini's Google Search grounding. That is the one call shape where the three
+genuinely differ, so it is the first thing to check when adding a fourth.
+
+Adding a provider is [one file](src/pitches_peaches/providers/), the same shape
+as the TTS backends: `parse`, `write`, `research`, plus `available()`. The e2e
+suite doubles as the conformance test — it asserts only on structure, so
+`pytest --e2e --provider yours` passing means your backend is wired correctly.
+
 ## Privacy
 
-Your CV never leaves your machine except to the Anthropic API, under your own
-key. There is no server, no telemetry, no account, and no phoning home. Output
+Your CV never leaves your machine except to your chosen provider's API, under
+your own key. There is no server, no telemetry, no account, and no phoning home. Output
 is local files in a directory you chose. The web searches during recon are
 about the company, not about you — your CV is not in that request.
 
 ## Cost
 
-A full run at Opus 5 is roughly **300k–500k input tokens and 40k–70k output**,
-most of it the recon research and the playbook's long answers. At Opus 5
-pricing ($5/$25 per million) that is **about $2.50–$4.50 per application**.
+A full run is roughly **300k–500k input tokens and 40k–70k output**, most of it
+the recon research and the playbook's long answers. At Opus 5 pricing ($5/$25
+per million) that is **about $2.50–$4.50 per application**.
 
-Cheaper: `--model claude-sonnet-5` runs about a third of that. `--effort medium`
-cuts it further. Both cost you some depth in the playbook answers, which is the
-part worth paying for, so drop effort before you drop model.
+Cheaper, in the order I would reach for them: `--effort medium`, then a smaller
+model (`--model claude-sonnet-5`), then a cheaper provider. Effort first,
+because the depth of the playbook answers is the part worth paying for.
+
+These are estimates, not measurements — nothing records token usage yet. See
+[DEBRIEF.md](DEBRIEF.md).
 
 Re-running a single stage only re-spends that stage.
 

@@ -30,7 +30,12 @@ dependencies = [
 
 [project.optional-dependencies]
 audio = ["kokoro>=0.9", "soundfile>=0.12"]
-dev = ["pytest>=8.0"]
+openai = ["openai>=3.0"]
+gemini = ["google-genai>=2.0"]
+all-providers = ["openai>=3.0", "google-genai>=2.0"]
+# The provider tests check schema portability against the real SDKs, so dev
+# pulls them in even though a plain install does not.
+dev = ["pytest>=8.0", "openai>=3.0", "google-genai>=2.0"]
 
 [project.urls]
 Homepage = "https://github.com/nekropol/pitches-peaches"

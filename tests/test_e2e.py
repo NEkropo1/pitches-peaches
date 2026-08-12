@@ -1,9 +1,12 @@
-"""End-to-end tests against the live Anthropic API.
+"""End-to-end tests against a live provider API.
 
 Skipped unless you opt in — these cost real money:
 
-    pytest --e2e -k smoke       # one cheap parse call, ~$0.05
-    pytest --e2e                # the full pipeline, ~$2-5
+    pytest --e2e -k smoke                  # one cheap parse call
+    pytest --e2e                           # the full pipeline
+    pytest --e2e --provider openai         # the same suite, on OpenAI
+    pytest --e2e --provider gemini
+    pytest --e2e --provider openai --e2e-model gpt-5.4-mini
 
 They assert on *structure and invariants*, never on the model's wording. A test
 that asserts the dossier contains a particular sentence is a test of the model,
@@ -18,7 +21,9 @@ What they actually pin down:
 - the band matches the score, and the gate decision is recorded
 - fit.html has no external references, so it opens on a plane
 
-Point it at your own CV with PEACHES_E2E_CV=/path/to/cv.pdf.
+Because it asserts only on structure, the same suite is the conformance test
+for a new provider: if `--provider yours` passes, your backend is wired
+correctly. Point it at your own CV with PEACHES_E2E_CV=/path/to/cv.pdf.
 """
 
 from __future__ import annotations
@@ -58,16 +63,35 @@ def workdir(tmp_path_factory) -> Path:
 
 
 @pytest.fixture(scope="module")
-def llm(workdir: Path) -> LLM:
+def provider_name(pytestconfig) -> str:
+    from conftest import e2e_provider
+
+    return e2e_provider(pytestconfig)
+
+
+@pytest.fixture(scope="module")
+def llm(workdir: Path, provider_name: str, pytestconfig) -> LLM:
     # Keep the live suite affordable by default; override with PEACHES_EFFORT.
-    return LLM(Config.load(workdir, effort=os.environ.get("PEACHES_EFFORT", "medium")))
+    config = Config.load(
+        workdir,
+        provider=provider_name,
+        model=pytestconfig.getoption("--e2e-model"),
+        effort=os.environ.get("PEACHES_EFFORT", "medium"),
+    )
+    built = LLM(config)
+    print(f"\n[e2e] provider: {built.describe()}")
+    return built
 
 
 # -- the cheap one -----------------------------------------------------------
 
 
 def test_smoke_structured_output_round_trips(llm: LLM):
-    """One small parse call. Proves the key, the model id, and the schema path."""
+    """One small parse call. Proves the key, the model id, and the schema path.
+
+    Run this first against any new provider — it is the cheapest thing that
+    fails when a credential, model id, or structured-output binding is wrong.
+    """
     from pitches_peaches.models import Profile as Schema
 
     result = llm.parse(
@@ -80,6 +104,7 @@ def test_smoke_structured_output_round_trips(llm: LLM):
     )
     assert isinstance(result, Schema)
     assert result.skills, "no skills extracted from an obviously skill-bearing CV"
+    assert any("python" in s.name.lower() for s in result.skills)
     for skill in result.skills:
         assert skill.cv_line.strip(), "a skill came back with no source line"
 
@@ -113,6 +138,15 @@ def test_full_pipeline(workdir: Path, llm: LLM):
 
     assert recon.charitable_read.strip() and recon.uncharitable_read.strip()
     assert recon.charitable_read != recon.uncharitable_read
+
+    # Grounding is the least portable of the three call shapes — check the
+    # provider's web search actually ran and its citations were extracted.
+    notes = (workdir / "recon-notes.md").read_text()
+    assert len(notes) > 800, "research produced almost nothing"
+    assert state.stages["recon"]["sources"], (
+        "no sources were extracted — the provider's grounding result walker "
+        "is probably reading the wrong field"
+    )
 
     dossier = (workdir / "01-company.md").read_text()
     assert len(dossier) > 1500, "the dossier is suspiciously short"

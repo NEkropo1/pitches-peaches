@@ -93,7 +93,8 @@ def test_state_file_is_readable_json(tmp_path):
 
 def test_config_defaults(tmp_path):
     cfg = Config.load(tmp_path)
-    assert cfg.model == "claude-opus-5"
+    assert cfg.provider == "anthropic"
+    assert cfg.model == "auto"  # resolved to the provider's default in LLM.model
     assert cfg.effort == "high"
     assert cfg.audio is False
 
