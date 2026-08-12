@@ -13,6 +13,7 @@ defaults, keep the contract small enough that someone can add their own.
 
 from __future__ import annotations
 
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable, Protocol, TypeVar, runtime_checkable
@@ -131,6 +132,68 @@ def as_parts(content: Content) -> list[Part]:
 def flatten_text(content: Content) -> str:
     """All the text in ``content``, for providers that take one string."""
     return "\n\n".join(p.text for p in as_parts(content) if isinstance(p, Text))
+
+
+@contextmanager
+def api_errors(provider: "Provider", model: str = ""):
+    """Turn a provider SDK exception into something a person can act on.
+
+    Without this, an expired key produces a forty-line Rich traceback ending
+    in the SDK's own wording. The status code is the only part that matters,
+    and each one has exactly one likely cause worth naming.
+    """
+    try:
+        yield
+    except ProviderError:
+        raise
+    except Exception as exc:
+        status = _status_of(exc)
+        if status is None:
+            raise
+        raise ProviderError(_status_message(status, provider, model, exc)) from exc
+
+
+def _status_of(exc: Exception) -> int | None:
+    """Every provider SDK exposes the HTTP status somewhere slightly different."""
+    for attr in ("status_code", "code", "status"):
+        value = getattr(exc, attr, None)
+        if isinstance(value, int):
+            return value
+    response = getattr(exc, "response", None)
+    value = getattr(response, "status_code", None)
+    return value if isinstance(value, int) else None
+
+
+def _status_message(status: int, provider: "Provider", model: str, exc: Exception) -> str:
+    key = provider.env_key
+    if status == 401:
+        return (
+            f"{provider.name} rejected {key}.\n"
+            "The value must be the whole key and nothing else — check for a "
+            "stray character at the start, surrounding quotes, or a trailing\n"
+            "comment if it came from a .env file. Confirm what is actually set:\n"
+            f'  python -c "import os;k=os.environ.get(\'{key}\',\'\');'
+            "print(len(k), repr(k[:8]), repr(k[-4:]))\""
+        )
+    if status == 403:
+        return (
+            f"{provider.name} refused {key}: the key is valid but not permitted "
+            f"to use {model or 'this model'}. Check the key's project and scopes."
+        )
+    if status == 404:
+        return (
+            f"{provider.name} has no model called {model!r} for this account.\n"
+            f"Pick another with --model, or drop --model to use "
+            f"{provider.default_model}."
+        )
+    if status == 429:
+        return (
+            f"{provider.name} rate-limited or out of quota. Wait and retry, or "
+            "lower --effort. If this is a brand-new key, check billing is set up."
+        )
+    if status >= 500:
+        return f"{provider.name} returned a {status}. That is their side — retry shortly."
+    return f"{provider.name} returned {status}: {exc}"
 
 
 def dedupe(items) -> list[str]:

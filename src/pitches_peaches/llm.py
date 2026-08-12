@@ -10,6 +10,10 @@ Three call shapes:
 ``write``     long-form prose. Always streamed — these documents run past 16k
               tokens and a non-streaming request would hit the HTTP timeout.
 ``research``  grounded recon, using the provider's server-side web search.
+
+All three translate provider SDK exceptions into ``LLMError`` here, so a
+rejected key or a wrong model id reaches the user as one readable line rather
+than a traceback out of somebody else's HTTP layer.
 """
 
 from __future__ import annotations
@@ -30,7 +34,7 @@ from .providers import (
     Text,
     resolve,
 )
-from .providers.base import T
+from .providers.base import T, api_errors
 
 __all__ = [
     "LLM",
@@ -107,14 +111,15 @@ class LLM:
         answer: an instruction hidden in a CV has nowhere to land, because the
         only thing this call can emit is a shape we defined.
         """
-        return self._provider.parse(
-            schema,
-            system=system,
-            content=content,
-            model=self.model,
-            effort=effort or self.config.parse_effort,
-            max_tokens=max_tokens,
-        )
+        with api_errors(self._provider, self._model):
+            return self._provider.parse(
+                schema,
+                system=system,
+                content=content,
+                model=self._model,
+                effort=effort or self.config.parse_effort,
+                max_tokens=max_tokens,
+            )
 
     def write(
         self,
@@ -126,14 +131,15 @@ class LLM:
         on_text: Callable[[str], None] | None = None,
     ) -> str:
         """Stream a long-form prose document and return the whole thing."""
-        return self._provider.write(
-            system=system,
-            content=content,
-            model=self.model,
-            effort=effort or self.config.effort,
-            max_tokens=max_tokens,
-            on_text=on_text,
-        )
+        with api_errors(self._provider, self._model):
+            return self._provider.write(
+                system=system,
+                content=content,
+                model=self._model,
+                effort=effort or self.config.effort,
+                max_tokens=max_tokens,
+                on_text=on_text,
+            )
 
     def research(
         self,
@@ -145,11 +151,12 @@ class LLM:
         on_search: Callable[[str], None] | None = None,
     ) -> Research:
         """Grounded research using the provider's server-side web search."""
-        return self._provider.research(
-            system=system,
-            content=content,
-            model=self.model,
-            effort=effort or self.config.effort,
-            max_tokens=max_tokens,
-            on_search=on_search,
-        )
+        with api_errors(self._provider, self._model):
+            return self._provider.research(
+                system=system,
+                content=content,
+                model=self._model,
+                effort=effort or self.config.effort,
+                max_tokens=max_tokens,
+                on_search=on_search,
+            )

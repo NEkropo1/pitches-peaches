@@ -8,6 +8,7 @@ provider default is ``auto`` — whichever key you happen to have set.
 from __future__ import annotations
 
 import os
+import re
 from dataclasses import dataclass, fields
 from pathlib import Path
 from typing import Any
@@ -119,8 +120,32 @@ def load_dotenv(workdir: Path) -> None:
             continue
         key, _, value = line.partition("=")
         key = key.strip()
-        value = value.strip().strip("'\"")
-        os.environ.setdefault(key, value)
+        if key.startswith("export "):  # people paste shell lines in here
+            key = key[len("export ") :].strip()
+        os.environ.setdefault(key, _env_value(value))
+
+
+def _env_value(raw: str) -> str:
+    """Parse one ``.env`` right-hand side.
+
+    Strips an inline ``# comment``, because a config template with trailing
+    comments is exactly what people uncomment — and a silently swallowed
+    comment turns a model id into a 57-character string that fails much later,
+    somewhere much less obvious.
+
+    A quoted value is taken verbatim, so a ``#`` inside quotes survives.
+    """
+    value = raw.strip()
+    for quote in ("'", '"'):
+        if len(value) >= 2 and value.startswith(quote):
+            end = value.find(quote, 1)
+            if end != -1:
+                return value[1:end]
+    # Unquoted: a comment starts at the first '#' that follows whitespace.
+    cut = re.search(r"\s#", value)
+    if cut:
+        value = value[: cut.start()]
+    return value.strip()
 
 
 def any_key_present() -> bool:

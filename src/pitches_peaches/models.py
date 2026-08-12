@@ -132,11 +132,23 @@ class Inconsistency(BaseModel):
     )
 
 
+class ContactDetail(BaseModel):
+    """One way to reach the candidate.
+
+    A list of typed pairs rather than a free-form ``dict[str, str]``: an object
+    with arbitrary keys cannot be expressed in a strict JSON schema, so a dict
+    here is rejected outright by some providers' structured-output modes.
+    """
+
+    kind: str = Field(description="email, phone, linkedin, telegram, github, site")
+    value: str
+
+
 class Profile(BaseModel):
     name: str | None = None
     headline: str | None = None
     location: str | None = None
-    contact: dict[str, str] = Field(default_factory=dict)
+    contact: list[ContactDetail] = Field(default_factory=list)
     years_total: str | None = None
     years_commercial: str | None = None
     languages: list[str] = Field(default_factory=list)

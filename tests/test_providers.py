@@ -344,10 +344,10 @@ def test_gemini_tolerates_an_ungrounded_event():
 # -- structured output portability ------------------------------------------
 
 
-@pytest.mark.parametrize(
-    "schema_name",
-    ["Recon", "Profile", "MatchDraft", "Playbook", "Gate", "Diagrams"],
-)
+SCHEMAS = ["Recon", "Profile", "MatchDraft", "Playbook", "Gate", "Diagrams"]
+
+
+@pytest.mark.parametrize("schema_name", SCHEMAS)
 def test_every_schema_converts_for_openai_strict_mode(schema_name):
     """OpenAI rejects some JSON Schema keywords outright; catch it here, cheaply."""
     from openai.lib._pydantic import to_strict_json_schema
@@ -355,6 +355,49 @@ def test_every_schema_converts_for_openai_strict_mode(schema_name):
     import pitches_peaches.models as models
 
     to_strict_json_schema(getattr(models, schema_name))
+
+
+def _walk(node, path="()"):
+    """Yield (path, object-schema) for every object in a JSON schema."""
+    if isinstance(node, dict):
+        if node.get("type") == "object":
+            yield path, node
+        for key, value in node.items():
+            yield from _walk(value, f"{path}.{key}")
+    elif isinstance(node, list):
+        for index, value in enumerate(node):
+            yield from _walk(value, f"{path}[{index}]")
+
+
+@pytest.mark.parametrize("schema_name", SCHEMAS)
+def test_no_schema_contains_a_free_form_object(schema_name):
+    """A `dict[str, str]` field passes local conversion and is refused by the API.
+
+    OpenAI strict mode requires `required` to list every key in `properties`,
+    which an object with arbitrary keys cannot satisfy — the SDK emits it
+    happily and the server returns 400. This is the check that would have
+    caught `Profile.contact` before it cost a live call.
+    """
+    from openai.lib._pydantic import to_strict_json_schema
+
+    import pitches_peaches.models as models
+
+    schema = to_strict_json_schema(getattr(models, schema_name))
+    for path, obj in _walk(schema):
+        extra = obj.get("additionalProperties")
+        assert extra is False or extra is None, (
+            f"{schema_name} at {path} allows arbitrary keys "
+            f"(additionalProperties={extra!r}). Model it as a list of typed "
+            "items instead — a free-form object is not expressible in a "
+            "strict JSON schema."
+        )
+        required = set(obj.get("required", []))
+        properties = set(obj.get("properties", {}))
+        assert required == properties, (
+            f"{schema_name} at {path}: required and properties disagree "
+            f"(only in required: {sorted(required - properties)}; "
+            f"only in properties: {sorted(properties - required)})"
+        )
 
 
 @pytest.mark.parametrize(
@@ -370,3 +413,86 @@ def test_every_schema_is_accepted_by_gemini(schema_name):
         response_mime_type="application/json",
         response_schema=getattr(models, schema_name),
     )
+
+
+# -- SDK exceptions become readable errors ----------------------------------
+
+
+class _FakeStatusError(Exception):
+    """Shaped like an SDK's HTTP error: carries a status code."""
+
+    def __init__(self, status_code: int):
+        super().__init__(f"Error code: {status_code}")
+        self.status_code = status_code
+
+
+def _llm_over(provider_name: str, tmp_path, monkeypatch, raising: Exception):
+    monkeypatch.setenv(select(provider_name).env_key, "x")
+    provider = select(provider_name)
+
+    def boom(*args, **kwargs):
+        raise raising
+
+    monkeypatch.setattr(provider, "research", boom, raising=False)
+    monkeypatch.setattr(provider, "write", boom, raising=False)
+    monkeypatch.setattr(provider, "parse", boom, raising=False)
+    return LLM(Config.load(tmp_path), provider, "some-model")
+
+
+def test_401_says_the_key_was_rejected_and_how_to_check(tmp_path, monkeypatch):
+    """The traceback that started this: a stray character in front of the key."""
+    llm = _llm_over("openai", tmp_path, monkeypatch, _FakeStatusError(401))
+    with pytest.raises(ProviderError) as err:
+        llm.write(system="s", content="c")
+    message = str(err.value)
+    assert "openai rejected OPENAI_API_KEY" in message
+    assert "stray character" in message
+    assert "OPENAI_API_KEY" in message
+
+
+def test_404_names_the_model_and_the_fallback(tmp_path, monkeypatch):
+    llm = _llm_over("openai", tmp_path, monkeypatch, _FakeStatusError(404))
+    with pytest.raises(ProviderError) as err:
+        llm.parse(Config, system="s", content="c")
+    message = str(err.value)
+    assert "'some-model'" in message
+    assert "--model" in message
+
+
+def test_429_mentions_quota_and_effort(tmp_path, monkeypatch):
+    llm = _llm_over("openai", tmp_path, monkeypatch, _FakeStatusError(429))
+    with pytest.raises(ProviderError) as err:
+        llm.research(system="s", content="c")
+    assert "quota" in str(err.value) and "--effort" in str(err.value)
+
+
+def test_5xx_is_attributed_to_the_provider(tmp_path, monkeypatch):
+    llm = _llm_over("anthropic", tmp_path, monkeypatch, _FakeStatusError(503))
+    with pytest.raises(ProviderError) as err:
+        llm.write(system="s", content="c")
+    assert "their side" in str(err.value)
+
+
+def test_a_status_on_the_response_object_is_also_found(tmp_path, monkeypatch):
+    class WithResponse(Exception):
+        def __init__(self):
+            super().__init__("boom")
+            self.response = NS(status_code=401)
+
+    llm = _llm_over("openai", tmp_path, monkeypatch, WithResponse())
+    with pytest.raises(ProviderError) as err:
+        llm.write(system="s", content="c")
+    assert "rejected" in str(err.value)
+
+
+def test_an_error_with_no_status_is_left_alone(tmp_path, monkeypatch):
+    """Don't swallow programming errors — only translate HTTP failures."""
+    llm = _llm_over("openai", tmp_path, monkeypatch, ValueError("a real bug"))
+    with pytest.raises(ValueError, match="a real bug"):
+        llm.write(system="s", content="c")
+
+
+def test_provider_errors_pass_through_untranslated(tmp_path, monkeypatch):
+    llm = _llm_over("openai", tmp_path, monkeypatch, ProviderError("already clear"))
+    with pytest.raises(ProviderError, match="already clear"):
+        llm.write(system="s", content="c")

@@ -78,7 +78,7 @@ def llm(workdir: Path, provider_name: str, pytestconfig) -> LLM:
         model=pytestconfig.getoption("--e2e-model"),
         effort=os.environ.get("PEACHES_EFFORT", "medium"),
     )
-    built = LLM(config)
+    built = LLM.from_config(config, workdir=workdir)
     print(f"\n[e2e] provider: {built.describe()}")
     return built
 

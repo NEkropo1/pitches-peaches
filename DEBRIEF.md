@@ -1,13 +1,16 @@
 # Debrief
 
-Updated after the multi-provider work. The headline is unchanged: **no stage
-has ever run against a live API — on any provider.** No usable credential was
-available, so every model-facing code path in this repo is unexecuted. The
-deterministic half is tested properly; the half that talks to a model is
-written against SDK surfaces verified by introspecting the installed packages,
-and nothing more.
+**The full pipeline has now run end to end against live OpenAI** —
+`gpt-5.4-mini`, all six stages, 5m16s, every assertion in
+`test_full_pipeline` green. That is the first real execution this project has
+had, and it replaces the previous headline ("nothing has ever run").
 
-Read this as the to-do list for the first session that has a key.
+Still unexecuted: **Anthropic and Gemini**. Their provider code is written
+against SDK surfaces verified by introspection, and the shared pipeline above
+them is now proven, but neither has made a real call. Run
+`pytest --e2e --provider anthropic` and `--provider gemini` to close that.
+
+Read this as the to-do list for the next session.
 
 ---
 
@@ -32,11 +35,34 @@ Two real bugs were caught by writing those tests, not by reading the code: the
 `{{pause:900}}` / `{{placeholder}}` delimiter collision, and unwrapped terminal
 output that ran to 187 columns.
 
-## 2. What is completely unexecuted
+## 2. What the live OpenAI run proved
+
+The full-pipeline test asserts on structure only, so passing it means all of
+this actually works, not just that it did not crash:
+
+- All six stages run in order, each writing the artifact the next one requires.
+- Every artifact survives a real round trip and re-validates against its schema.
+- **Grounding works**: recon's web search ran and citations were extracted
+  (`state.stages["recon"]["sources"]` was non-empty, which was the assertion
+  most likely to catch a wrong field name).
+- **Quote verification survived contact with a real model**: fit points came
+  back with quotes that are genuinely in the source. It did not drop everything,
+  which was failure mode #3 below.
+- **The Playbook schema held together** — the single biggest predicted risk.
+  Answers came back over the 600-character depth floor rather than collapsing
+  into stubs, so the "split it into one call per technology" refactor is *not*
+  needed on this model. Re-check on Anthropic and Gemini before concluding it
+  never is.
+- Render wrote `00-README.md`, `02-fit.md`, `03-playbook.md`, a self-contained
+  `fit.html` with no external references, and standalone `.mermaid` files.
+- The gate recorded its decision and the state machine survived the whole run.
+
+## 3. What is still unexecuted
 
 Everything below has never made or handled a real API response.
 
-- **`llm.py` in its entirety.** All three call shapes. In particular:
+- **`llm.py` against Anthropic and Gemini.** All three call shapes are proven
+  on OpenAI. Against the other two, in particular:
   - `research()`'s `pause_turn` resume loop. I have never seen a `pause_turn`
     from this code. The resume appends `final.content` and re-sends; if the
     server rejects that shape the whole recon stage fails.
@@ -47,21 +73,19 @@ Everything below has never made or handled a real API response.
     `output_format=Schema`. I verified in the installed SDK source that these
     are merged rather than one clobbering the other, so this should hold — but
     "should" is doing work.
-  - PDF document blocks. Never sent one.
-- **Every stage module.** `recon`, `profile`, `match`, `gate`, `playbook`,
-  `render` — the orchestration is exercised only by the e2e test, which is
-  skipped.
-- **Every prompt.** Not one has been through a model. This is the biggest
-  unknown in the project by a wide margin; see §4.
-- **The OpenAI and Gemini providers, entirely.** Their SDK surfaces were
-  introspected against the installed packages (`openai` 3.0.0, `google-genai`
-  2.17.0) rather than written from memory — signatures, parameter names, tool
-  types, and effort enums are all confirmed to exist. What is *not* confirmed is
-  runtime behaviour: whether the streaming event names fire as expected, whether
-  the grounding result walkers read the right fields on a real response, and
-  whether `gpt-5.4-mini` / `gemini-3-pro` are correct model ids for your
-  accounts. Both walkers are unit-tested against hand-built response objects, so
-  the logic is right *if* the shapes are.
+  - PDF document blocks. Never sent one on any provider — the live run used the
+    JSON fixture CV, so the `.pdf` path is still untested everywhere.
+- **The interactive paths.** The live run was `--non-interactive`: the match
+  probe loop and the gate's confirm prompt have never been driven by a real
+  person. `peaches run` without `--non-interactive` is untested.
+- **Both TTS paths at the pipeline level.** The live run passed `audio=False`.
+- **The Anthropic and Gemini providers.** OpenAI is now proven; these two are
+  not. Their SDK surfaces were introspected against the installed packages
+  (`anthropic` 0.121.0, `google-genai` 2.17.0), so signatures and tool types are
+  confirmed to exist, but no call has been made. Specifically unverified:
+  Anthropic's `pause_turn` resume loop and `web_search_tool_result` walking, and
+  whether Gemini's grounding metadata arrives on streamed events or only on the
+  final aggregated response. `gemini-3-pro` is also an unconfirmed model id.
 - **Both TTS backends.** `kokoro` is not installed here and `say` was never
   invoked. The kokoro segment/silence concatenation is the least certain part —
   I am not confident `KPipeline(...)` yields `(gs, ps, audio)` triples in the
@@ -100,6 +124,9 @@ fixture is an invented person, since this repo is public.
 
 ## 4. Where I expect it to break, in order of likelihood
 
+0. ~~**`Playbook` is a big schema to fill in one structured call.**~~ Survived
+   the live OpenAI run with answers above the depth floor. Left below because it
+   is still unproven on Anthropic and Gemini.
 1. **`Playbook` is a big schema to fill in one structured call.** Three
    technologies × three questions × a long answer × deep dives, all inside one
    `messages.parse`. Two failure modes: it hits `max_tokens` at 64k and returns
@@ -135,7 +162,21 @@ fixture is an invented person, since this repo is public.
 
 ## 5. Multi-provider notes
 
-Two things I got wrong when scoping this, corrected after checking:
+### The schema lesson, learned the expensive way
+
+`Profile.contact` was `dict[str, str]`. OpenAI's `to_strict_json_schema`
+converted it without complaint, my offline portability test passed, and the API
+then returned a 400: a free-form object cannot satisfy strict mode's rule that
+`required` list every key in `properties`. **Local schema conversion succeeding
+does not mean the API will accept the result.**
+
+It is now a typed `list[ContactDetail]`, and there is an offline guard
+(`test_no_schema_contains_a_free_form_object`) that walks every schema and
+rejects `additionalProperties` that is not `false`, plus any object where
+`required` and `properties` disagree. Verified to fail on the old model. Add no
+free-form `dict` fields to `models.py`.
+
+### Two things I got wrong when scoping this, corrected after checking:
 
 - I expected the Pydantic schemas to need per-provider transformation, because
   of `Field(ge=0, le=100)` and 19 optional fields. They do not. The OpenAI SDK's
@@ -153,6 +194,13 @@ The genuinely provider-specific part is grounding, as expected: three different
 tool declarations, three different result shapes, three different citation
 fields. That is why `research()` is the one call shape with a real per-provider
 implementation, and why the e2e test checks that sources came back at all.
+
+### e2e tests rot silently
+
+They are skipped by default, so the DI refactor broke the `llm` fixture
+(`LLM(config)` lost its two positional args) and nothing noticed until a live
+run. Any change to `LLM`, `Config`, or a stage signature needs
+`pytest --e2e -k smoke` afterwards, or at minimum a read of `test_e2e.py`.
 
 ## 6. Refactors I would consider, once it runs
 

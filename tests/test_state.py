@@ -1,6 +1,7 @@
 """The run directory: resume, dependency errors, and the gate."""
 
 import json
+import os
 
 import pytest
 
@@ -133,3 +134,95 @@ def test_bools_and_ints_coerce_from_env(tmp_path, monkeypatch):
 def test_unknown_config_keys_are_ignored(tmp_path):
     (tmp_path / "peaches.toml").write_text('model = "x"\nnonsense = 1\n')
     assert Config.load(tmp_path).model == "x"
+
+
+# -- .env parsing: the shape of a real, hand-edited file ---------------------
+
+
+def _dotenv(tmp_path, body: str):
+    (tmp_path / ".env").write_text(body)
+    return tmp_path
+
+
+def test_dotenv_strips_an_inline_comment(tmp_path, monkeypatch):
+    """A template with trailing comments is exactly what people uncomment.
+
+    Swallowing the comment turns a model id into a 57-character string that
+    fails much later, somewhere much less obvious.
+    """
+    from pitches_peaches.config import load_dotenv
+
+    monkeypatch.delenv("PEACHES_MODEL", raising=False)
+    monkeypatch.delenv("PEACHES_EFFORT", raising=False)
+    _dotenv(
+        tmp_path,
+        "PEACHES_MODEL=auto                  # `auto` = this provider's default:\n"
+        "PEACHES_EFFORT=high                 # low|medium|high|xhigh|max\n",
+    )
+    load_dotenv(tmp_path)
+    assert os.environ["PEACHES_MODEL"] == "auto"
+    assert os.environ["PEACHES_EFFORT"] == "high"
+
+
+def test_dotenv_keeps_a_hash_that_is_part_of_the_value(tmp_path, monkeypatch):
+    from pitches_peaches.config import load_dotenv
+
+    monkeypatch.delenv("SECRET", raising=False)
+    _dotenv(tmp_path, 'SECRET="abc#def"\n')
+    load_dotenv(tmp_path)
+    assert os.environ["SECRET"] == "abc#def"
+
+
+def test_dotenv_keeps_a_hash_with_no_leading_space(tmp_path, monkeypatch):
+    from pitches_peaches.config import load_dotenv
+
+    monkeypatch.delenv("SECRET", raising=False)
+    _dotenv(tmp_path, "SECRET=abc#def\n")
+    load_dotenv(tmp_path)
+    assert os.environ["SECRET"] == "abc#def"
+
+
+def test_dotenv_strips_quotes_and_whitespace(tmp_path, monkeypatch):
+    from pitches_peaches.config import load_dotenv
+
+    for name in ("A", "B", "C"):
+        monkeypatch.delenv(name, raising=False)
+    _dotenv(tmp_path, "A='single'\nB=\"double\"\nC=   spaced   \n")
+    load_dotenv(tmp_path)
+    assert os.environ["A"] == "single"
+    assert os.environ["B"] == "double"
+    assert os.environ["C"] == "spaced"
+
+
+def test_dotenv_tolerates_a_pasted_export_line(tmp_path, monkeypatch):
+    from pitches_peaches.config import load_dotenv
+
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    _dotenv(tmp_path, "export OPENAI_API_KEY=sk-proj-abc\n")
+    load_dotenv(tmp_path)
+    assert os.environ["OPENAI_API_KEY"] == "sk-proj-abc"
+
+
+def test_dotenv_does_not_override_the_shell(tmp_path, monkeypatch):
+    from pitches_peaches.config import load_dotenv
+
+    monkeypatch.setenv("OPENAI_API_KEY", "from-shell")
+    _dotenv(tmp_path, "OPENAI_API_KEY=from-file\n")
+    load_dotenv(tmp_path)
+    assert os.environ["OPENAI_API_KEY"] == "from-shell"
+
+
+def test_sample_env_has_no_trailing_comments_on_settable_lines():
+    """The template must be safe to uncomment, line by line."""
+    import re
+    from pathlib import Path
+
+    sample = Path(__file__).parent.parent / ".env.sample"
+    for number, line in enumerate(sample.read_text().splitlines(), 1):
+        body = line.lstrip("# ").strip()
+        if not re.match(r"^[A-Z][A-Z0-9_]*=", body):
+            continue
+        assert not re.search(r"\s#", body), (
+            f".env.sample:{number} has a trailing comment on a settable line, "
+            f"which becomes part of the value when uncommented: {line!r}"
+        )
