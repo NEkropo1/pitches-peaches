@@ -1,7 +1,8 @@
 """Configuration: flag > env > config file > default.
 
-``ANTHROPIC_API_KEY`` is the only value a user ever has to supply, and the only
-one never written to a config file. Everything else has a default.
+One provider API key is the only value a user ever has to supply, and the only
+one never written to a config file. Everything else has a default, and the
+provider default is ``auto`` — whichever key you happen to have set.
 """
 
 from __future__ import annotations
@@ -19,7 +20,7 @@ except ModuleNotFoundError:  # pragma: no cover
 ENV_PREFIX = "PEACHES_"
 CONFIG_FILE = "peaches.toml"
 
-DEFAULT_PROVIDER = "anthropic"
+DEFAULT_PROVIDER = "auto"
 #: "auto" means "this provider's default model", resolved in llm.LLM.model.
 DEFAULT_MODEL = "auto"
 DEFAULT_EFFORT = "high"
@@ -29,7 +30,8 @@ CONFIG_TEMPLATE = """\
 # Precedence: CLI flag > environment variable > this file > built-in default.
 # API keys are never written here. Put them in .env or your shell.
 
-provider = "anthropic"           # PEACHES_PROVIDER — anthropic|openai|gemini|auto
+provider = "auto"                # PEACHES_PROVIDER — auto|anthropic|openai|gemini
+#                                # auto = whichever provider key you have set
 model = "auto"                   # PEACHES_MODEL — "auto" = this provider's default
 effort = "high"                  # PEACHES_EFFORT — low|medium|high|xhigh|max
 parse_effort = "medium"          # PEACHES_PARSE_EFFORT — effort for the parsing stages
@@ -104,7 +106,9 @@ def _coerce(name: str, value: Any, default: Any) -> Any:
 def load_dotenv(workdir: Path) -> None:
     """Read ``.env`` from the workdir into the environment, without overriding it.
 
-    Deliberately tiny: the only key that belongs there is ANTHROPIC_API_KEY.
+    Deliberately tiny. The only things that belong there are provider keys —
+    ANTHROPIC_API_KEY, OPENAI_API_KEY, GEMINI_API_KEY — which is also why an
+    already-exported shell variable always wins over the file.
     """
     path = Path(workdir) / ".env"
     if not path.exists():
@@ -119,11 +123,8 @@ def load_dotenv(workdir: Path) -> None:
         os.environ.setdefault(key, value)
 
 
-def api_key_present(provider: str = "anthropic") -> bool:
-    """True when the credential the chosen provider needs is set."""
-    from .providers import select
+def any_key_present() -> bool:
+    """True when any provider has a usable credential."""
+    from .providers import all_providers
 
-    try:
-        return select(provider).available()
-    except Exception:
-        return False
+    return any(p.available() for p in all_providers())

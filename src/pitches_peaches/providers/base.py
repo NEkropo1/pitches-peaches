@@ -64,14 +64,28 @@ class ProviderError(RuntimeError):
     """Something went wrong that the user can act on. The message says what."""
 
 
+class CredentialError(ProviderError):
+    """No usable provider credential. The message names every way to fix it."""
+
+
+class PackageMissing(ProviderError):
+    """The provider's SDK is an optional extra and is not installed."""
+
+
 @runtime_checkable
 class Provider(Protocol):
     name: str
     default_model: str
     env_key: str
+    #: Import name of the SDK, and the extra that installs it.
+    package: str
+    extra: str
 
     def available(self) -> bool:
         """True when the credential this provider needs is present."""
+
+    def installed(self) -> bool:
+        """True when this provider's SDK can be imported."""
 
     def parse(
         self,

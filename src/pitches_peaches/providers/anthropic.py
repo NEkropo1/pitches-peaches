@@ -56,12 +56,19 @@ class AnthropicProvider:
     name = "anthropic"
     default_model = "claude-opus-5"
     env_key = "ANTHROPIC_API_KEY"
+    package = "anthropic"
+    extra = ""  # a hard dependency, always present
 
     def __init__(self, client=None):
         self._client = client
 
     def available(self) -> bool:
         return bool(os.environ.get(self.env_key))
+
+    def installed(self) -> bool:
+        import importlib.util
+
+        return importlib.util.find_spec(self.package) is not None
 
     @property
     def client(self):

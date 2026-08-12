@@ -93,7 +93,7 @@ def test_state_file_is_readable_json(tmp_path):
 
 def test_config_defaults(tmp_path):
     cfg = Config.load(tmp_path)
-    assert cfg.provider == "anthropic"
+    assert cfg.provider == "auto"  # agnostic: whichever key you have
     assert cfg.model == "auto"  # resolved to the provider's default in LLM.model
     assert cfg.effort == "high"
     assert cfg.audio is False

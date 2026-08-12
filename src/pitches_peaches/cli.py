@@ -20,7 +20,7 @@ from .config import (
     CONFIG_TEMPLATE,
     GITIGNORE_TEMPLATE,
     Config,
-    api_key_present,
+    any_key_present,
     load_dotenv,
 )
 from . import providers
@@ -89,22 +89,23 @@ def _cfg(workdir: Path, **overrides) -> Config:
 
 
 def _llm(workdir: Path, *, needs: tuple[str, ...] = (), **overrides) -> LLM:
-    """Build the client, but check the cheap preconditions first.
+    """The composition root: resolve everything once, then hand it down.
 
-    Dependency order matters for the error the user actually sees: a missing
-    upstream artifact is both more likely and more actionable than a missing
-    key, so it is reported first.
+    Order matters for the error the user actually sees. A missing upstream
+    artifact is both more likely and more actionable than a credential
+    problem, so it is checked first; then provider resolution, which reports
+    a missing key, a wrong-provider key, or a missing SDK with the exact fix.
     """
     config = _cfg(workdir, **overrides)
     if needs:
         RunState.load(workdir).require(*needs)
-    if not api_key_present(config.provider):
-        key = providers.select(config.provider).env_key
-        raise StageError(
-            f"{key} is not set. Export it, or put it in .env in {workdir}. "
-            f"It is the only credential the {config.provider} provider needs."
-        )
-    return LLM(config)
+
+    resolution = providers.resolve(
+        config.provider, model=config.model, workdir=workdir
+    )
+    if config.provider.strip().lower() in ("", "auto"):
+        console.print(f"[dim]using {resolution.describe()} — {resolution.reason}[/dim]")
+    return LLM.from_resolution(config, resolution)
 
 
 def _report(message: str) -> None:
@@ -180,11 +181,11 @@ def init(workdir: Path = WorkdirOpt) -> None:
         console.print("  (everything was already there)")
 
     console.print()
-    config = _cfg(workdir)
-    if not api_key_present(config.provider):
-        key = providers.select(config.provider).env_key
-        console.print(f"Set your key ({config.provider}), then run recon:")
-        console.print(f"  [bold]export {key}=...[/bold]")
+    _cfg(workdir)  # loads .env so the check below sees any key already there
+    if not any_key_present():
+        console.print("Set a provider key, then run recon. Any one of:")
+        for provider in providers.all_providers():
+            console.print(f"  [bold]export {provider.env_key}=...[/bold]")
     console.print(
         "  [bold]peaches run https://the-job-posting --cv ~/cv.pdf[/bold]"
     )
@@ -214,7 +215,7 @@ def recon(
             posting_file=posting,
             report=_step,
         )
-    except (StageError, LLMError, PromptError, FileNotFoundError) as exc:
+    except (StageError, LLMError, providers.ProviderError, PromptError, FileNotFoundError) as exc:
         _fail(exc)
     else:
         console.print(
@@ -240,7 +241,7 @@ def profile(
         result = stage.run(
             state, _llm(workdir, model=model, provider=provider), cv, notes_path=notes, report=_step
         )
-    except (StageError, LLMError, PromptError, FileNotFoundError, ValueError) as exc:
+    except (StageError, LLMError, providers.ProviderError, PromptError, FileNotFoundError, ValueError) as exc:
         _fail(exc)
     else:
         console.print(
@@ -275,7 +276,7 @@ def match(
             ask=_ask,
         )
         recon_data = state.read_json("recon.json")
-    except (StageError, LLMError, PromptError, FileNotFoundError) as exc:
+    except (StageError, LLMError, providers.ProviderError, PromptError, FileNotFoundError) as exc:
         _fail(exc)
     else:
         console.print()
@@ -310,7 +311,7 @@ def gate(
             report=_report,
             confirm=_confirm,
         )
-    except (StageError, LLMError, PromptError) as exc:
+    except (StageError, LLMError, providers.ProviderError, PromptError) as exc:
         _fail(exc)
     else:
         if decision != "proceed":
@@ -342,7 +343,7 @@ def playbook(
             force=force,
             report=_step,
         )
-    except (StageError, LLMError, PromptError) as exc:
+    except (StageError, LLMError, providers.ProviderError, PromptError) as exc:
         _fail(exc)
     else:
         techs = ", ".join(t.technology for t in result.technologies)
@@ -378,7 +379,7 @@ def render(
             audio=audio,
             report=_step,
         )
-    except (StageError, LLMError, PromptError) as exc:
+    except (StageError, LLMError, providers.ProviderError, PromptError) as exc:
         _fail(exc)
     else:
         console.print(f"[green]done[/green] — open {workdir / '00-README.md'}")
@@ -455,7 +456,7 @@ def run(
         render_stage.run(state, llm, audio=audio, report=_step)
     except typer.Exit:
         raise
-    except (StageError, LLMError, PromptError, FileNotFoundError, ValueError) as exc:
+    except (StageError, LLMError, providers.ProviderError, PromptError, FileNotFoundError, ValueError) as exc:
         _fail(exc)
     else:
         console.print()

@@ -9,9 +9,11 @@ constraint is the product, not a limitation of it.
 
 ```bash
 uv tool install pitches-peaches
-export ANTHROPIC_API_KEY=sk-ant-...
+export ANTHROPIC_API_KEY=...     # or OPENAI_API_KEY, or GEMINI_API_KEY
 peaches run https://the-job-posting --cv ~/cv.pdf -C runs/acme
 ```
+
+It is provider-agnostic: set whichever key you have and it uses that one.
 
 No uv? `curl -LsSf https://raw.githubusercontent.com/nekropol/pitches-peaches/main/install.sh | sh`
 (or `install.ps1` on Windows) installs uv and then the tool. Nothing else.
@@ -211,7 +213,7 @@ Precedence is **flag > environment variable > `peaches.toml` > default**.
 
 | Key | Env | Default | What it does |
 |---|---|---|---|
-| `provider` | `PEACHES_PROVIDER` | `anthropic` | `anthropic`, `openai`, `gemini`, or `auto`. |
+| `provider` | `PEACHES_PROVIDER` | `auto` | `auto` uses whichever key you have set. |
 | `model` | `PEACHES_MODEL` | `auto` | `auto` means the provider's default. |
 | `effort` | `PEACHES_EFFORT` | `high` | `low`–`max`, for recon and playbook. |
 | `parse_effort` | `PEACHES_PARSE_EFFORT` | `medium` | Effort for the parsing stages. |
@@ -232,19 +234,31 @@ so you can tune the voice of your own dossiers without touching Python.
 
 ## Providers
 
-Anthropic by default; OpenAI and Gemini are one flag away.
+There is no default provider. `provider` defaults to `auto`, which uses
+whichever key you have set — so setting `OPENAI_API_KEY` and running is enough,
+with no flags and no config.
 
 ```bash
 uv tool install "pitches-peaches[all-providers]"
 
-peaches run <posting> --cv ~/cv.pdf --provider openai
-peaches run <posting> --cv ~/cv.pdf --provider gemini
-peaches run <posting> --cv ~/cv.pdf --provider auto     # whichever key is set
+export OPENAI_API_KEY=...
+peaches run <posting> --cv ~/cv.pdf          # uses openai, and says so
 ```
 
-You do not also have to change `--model`: it defaults to `auto`, which resolves
-to that provider's default (`claude-opus-5`, `gpt-5.4-mini`, `gemini-3-pro`).
-Set one explicitly and it is never overridden.
+Pin one explicitly when you have several keys:
+
+```bash
+peaches run <posting> --cv ~/cv.pdf --provider anthropic
+```
+
+`--model` also defaults to `auto`, resolving to that provider's own default
+(`claude-opus-5`, `gpt-5.4-mini`, `gemini-3-pro`), so switching provider never
+also requires switching model. Set one explicitly and it is never overridden.
+
+Getting it wrong is meant to be self-correcting. Asking for a provider whose
+key you have not set tells you which key you *do* have and the three ways to
+use it; having no key at all lists every option with the full path of the
+`.env` it would read.
 
 `--effort` means the same thing on Anthropic and OpenAI — both take
 `low` through `max`. Gemini's thinking ladder stops at `high`, so `xhigh` and

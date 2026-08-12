@@ -26,9 +26,9 @@ from .providers import (
     Provider,
     ProviderError,
     Research,
+    Resolution,
     Text,
-    default_model_for,
-    select,
+    resolve,
 )
 from .providers.base import T
 
@@ -55,11 +55,29 @@ def pdf_block(path: Path) -> PDF:
 
 
 class LLM:
-    """Config plus a provider. Stages hold one of these and nothing else."""
+    """Config plus an already-resolved provider and model.
 
-    def __init__(self, config: Config, *, provider: Provider | None = None):
+    The provider is *injected*, not looked up. Resolution — which provider,
+    which model, and whether the credential and SDK are actually there —
+    happens once in ``providers.resolve()`` at the composition root, so a
+    wiring problem is reported before any stage starts rather than surfacing
+    from inside recon.
+    """
+
+    def __init__(self, config: Config, provider: Provider, model: str):
         self.config = config
-        self._provider = provider or select(config.provider)
+        self._provider = provider
+        self._model = model
+
+    @classmethod
+    def from_config(cls, config: Config, *, workdir=None) -> "LLM":
+        """Resolve provider and model from config. Raises with a fix if it cannot."""
+        resolution = resolve(config.provider, model=config.model, workdir=workdir)
+        return cls.from_resolution(config, resolution)
+
+    @classmethod
+    def from_resolution(cls, config: Config, resolution: Resolution) -> "LLM":
+        return cls(config, resolution.provider, resolution.model)
 
     @property
     def provider(self) -> Provider:
@@ -67,19 +85,10 @@ class LLM:
 
     @property
     def model(self) -> str:
-        """The configured model, or the provider's default if none was set.
-
-        ``model = "auto"`` in peaches.toml means "whatever this provider's
-        default is", so switching provider does not also require switching
-        model — a claude model id sent to OpenAI is a confusing 404.
-        """
-        configured = (self.config.model or "").strip()
-        if not configured or configured == "auto":
-            return default_model_for(self.config.provider)
-        return configured
+        return self._model
 
     def describe(self) -> str:
-        return f"{self._provider.name}/{self.model}"
+        return f"{self._provider.name}/{self._model}"
 
     # -- the three shapes --------------------------------------------------
 

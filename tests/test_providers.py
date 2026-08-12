@@ -19,7 +19,15 @@ import pytest
 from pitches_peaches import providers
 from pitches_peaches.config import Config
 from pitches_peaches.llm import LLM
-from pitches_peaches.providers import PDF, ProviderError, Text, select
+from pitches_peaches.providers import (
+    PDF,
+    CredentialError,
+    PackageMissing,
+    ProviderError,
+    Text,
+    resolve,
+    select,
+)
 from pitches_peaches.providers.base import (
     as_parts,
     clamp_effort,
@@ -53,12 +61,6 @@ def test_each_provider_satisfies_the_protocol(name):
     assert provider.default_model and provider.env_key
 
 
-def test_unknown_provider_lists_the_real_ones():
-    with pytest.raises(ProviderError) as err:
-        select("openrouter")
-    assert "anthropic" in str(err.value) and "gemini" in str(err.value)
-
-
 def test_availability_follows_the_environment(monkeypatch):
     for key in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "GEMINI_API_KEY", "GOOGLE_API_KEY"):
         monkeypatch.delenv(key, raising=False)
@@ -77,47 +79,111 @@ def test_gemini_accepts_either_google_key_name(monkeypatch):
     assert select("gemini").available()
 
 
-def test_auto_picks_the_provider_that_has_a_credential(monkeypatch):
+def test_every_provider_declares_its_sdk_and_extra():
+    for name in providers.names():
+        provider = select(name)
+        assert provider.package
+        assert provider.installed() in (True, False)
+
+
+# -- resolution: the composition root ---------------------------------------
+
+
+@pytest.fixture
+def no_keys(monkeypatch):
     for key in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "GEMINI_API_KEY", "GOOGLE_API_KEY"):
         monkeypatch.delenv(key, raising=False)
-    monkeypatch.setenv("GEMINI_API_KEY", "x")
-    assert select("auto").name == "gemini"
-
-
-def test_auto_with_no_credential_names_every_variable(monkeypatch):
-    for key in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "GEMINI_API_KEY", "GOOGLE_API_KEY"):
-        monkeypatch.delenv(key, raising=False)
-    with pytest.raises(ProviderError) as err:
-        select("auto")
-    for key in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "GEMINI_API_KEY"):
-        assert key in str(err.value)
-
-
-# -- model defaulting --------------------------------------------------------
 
 
 @pytest.mark.parametrize(
     "provider,expected_prefix",
     [("anthropic", "claude"), ("openai", "gpt"), ("gemini", "gemini")],
 )
-def test_auto_model_resolves_per_provider(tmp_path, provider, expected_prefix):
+def test_model_defaults_per_provider(no_keys, monkeypatch, provider, expected_prefix):
     """Switching provider must not also require switching model."""
-    llm = LLM(Config.load(tmp_path, provider=provider), provider=select(provider))
-    assert llm.model.startswith(expected_prefix)
+    monkeypatch.setenv(select(provider).env_key, "x")
+    assert resolve(provider).model.startswith(expected_prefix)
 
 
-def test_an_explicit_model_is_never_overridden(tmp_path):
-    llm = LLM(
-        Config.load(tmp_path, provider="openai", model="gpt-4.1"),
-        provider=select("openai"),
+def test_an_explicit_model_is_never_overridden(no_keys, monkeypatch):
+    monkeypatch.setenv("OPENAI_API_KEY", "x")
+    assert resolve("openai", model="gpt-4.1").model == "gpt-4.1"
+
+
+@pytest.mark.parametrize("model", [None, "", "  ", "auto", "AUTO"])
+def test_blank_or_auto_model_falls_back_to_the_default(no_keys, monkeypatch, model):
+    monkeypatch.setenv("OPENAI_API_KEY", "x")
+    assert resolve("openai", model=model).model == select("openai").default_model
+
+
+def test_auto_is_the_default_and_picks_the_key_you_have(no_keys, monkeypatch):
+    monkeypatch.setenv("GEMINI_API_KEY", "x")
+    for requested in (None, "auto", "AUTO", "  "):
+        resolution = resolve(requested)
+        assert resolution.name == "gemini"
+        assert "only provider you have a key for" in resolution.reason
+
+
+def test_auto_with_several_keys_is_deterministic_and_says_so(no_keys, monkeypatch):
+    monkeypatch.setenv("OPENAI_API_KEY", "x")
+    monkeypatch.setenv("GEMINI_API_KEY", "x")
+    resolution = resolve("auto")
+    assert resolution.name == "openai"          # registry order
+    assert "gemini" in resolution.reason        # and it tells you about the other
+    assert "--provider" in resolution.reason
+
+
+def test_llm_is_built_from_a_resolution_not_a_lookup(tmp_path, no_keys, monkeypatch):
+    monkeypatch.setenv("OPENAI_API_KEY", "x")
+    llm = LLM.from_config(Config.load(tmp_path, provider="openai"))
+    assert llm.describe() == "openai/" + select("openai").default_model
+    # the provider is held, not re-selected on each access
+    assert llm.provider is llm.provider
+
+
+# -- the errors are the feature ----------------------------------------------
+
+
+def test_no_key_at_all_lists_every_provider_and_the_env_path(no_keys, tmp_path):
+    with pytest.raises(CredentialError) as err:
+        resolve("auto", workdir=tmp_path)
+    message = str(err.value)
+    for key in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "GEMINI_API_KEY"):
+        assert key in message
+    assert str(tmp_path.resolve() / ".env") in message
+    assert ".env.sample" in message
+
+
+def test_wrong_provider_for_the_key_you_have_says_exactly_what_to_do(
+    no_keys, monkeypatch
+):
+    """The complaint that motivated this: an OpenAI key and an Anthropic default."""
+    monkeypatch.setenv("OPENAI_API_KEY", "x")
+    with pytest.raises(CredentialError) as err:
+        resolve("anthropic")
+    message = str(err.value)
+    assert "ANTHROPIC_API_KEY" in message and "not set" in message
+    assert "You do have OPENAI_API_KEY set" in message
+    assert "--provider openai" in message
+    assert "PEACHES_PROVIDER=openai" in message
+    assert 'provider = "openai"' in message
+
+
+def test_missing_sdk_names_the_extra_that_installs_it(no_keys, monkeypatch):
+    monkeypatch.setenv("OPENAI_API_KEY", "x")
+    monkeypatch.setattr(
+        "pitches_peaches.providers.openai.OpenAIProvider.installed", lambda self: False
     )
-    assert llm.model == "gpt-4.1"
-    assert llm.describe() == "openai/gpt-4.1"
+    with pytest.raises(PackageMissing) as err:
+        resolve("openai")
+    assert "pitches-peaches[openai]" in str(err.value)
 
 
-def test_blank_model_falls_back_to_the_default(tmp_path):
-    llm = LLM(Config.load(tmp_path, provider="openai", model="  "), provider=select("openai"))
-    assert llm.model == select("openai").default_model
+def test_unknown_provider_lists_the_real_ones_and_auto():
+    with pytest.raises(ProviderError) as err:
+        resolve("openrouter")
+    message = str(err.value)
+    assert "anthropic" in message and "gemini" in message and "auto" in message
 
 
 # -- effort mapping ----------------------------------------------------------

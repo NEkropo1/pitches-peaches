@@ -54,12 +54,19 @@ class OpenAIProvider:
     name = "openai"
     default_model = "gpt-5.4-mini"
     env_key = "OPENAI_API_KEY"
+    package = "openai"
+    extra = "openai"
 
     def __init__(self, client=None):
         self._client = client
 
     def available(self) -> bool:
         return bool(os.environ.get(self.env_key))
+
+    def installed(self) -> bool:
+        import importlib.util
+
+        return importlib.util.find_spec(self.package) is not None
 
     @property
     def client(self):

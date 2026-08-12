@@ -38,12 +38,19 @@ class GeminiProvider:
     name = "gemini"
     default_model = "gemini-3-pro"
     env_key = "GEMINI_API_KEY"
+    package = "google.genai"
+    extra = "gemini"
 
     def __init__(self, client=None):
         self._client = client
 
     def available(self) -> bool:
         return bool(os.environ.get(self.env_key) or os.environ.get("GOOGLE_API_KEY"))
+
+    def installed(self) -> bool:
+        import importlib.util
+
+        return importlib.util.find_spec(self.package) is not None
 
     @property
     def client(self):
