@@ -3,13 +3,12 @@
 [![CI](https://github.com/NEkropo1/pitches-peaches/actions/workflows/ci.yml/badge.svg)](https://github.com/NEkropo1/pitches-peaches/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-Tool main idea is to make research, based on your CV and job posting, so
-give it a job posting and your CV, and it writes you a prep dossier: markdown
+Give it a job posting and your CV, and it writes you a prep dossier: markdown
 files with mermaid diagrams, a fit card you open in a browser, and optionally
 audio you can listen to on a walk. It never applies to anything. It does not
 open a browser, does not touch a job board account, does not contact anyone,
 and has no way to submit a form. It produces files on disk and stops. That
-constraint is the product, not a limitation of it.
+constraint is the product.
 
 ```bash
 uv tool install pitches-peaches
@@ -21,25 +20,23 @@ It is provider-agnostic: set whichever key you have and it uses that one.
 
 > ### ⚠️ v0.1.0: what has actually been run
 >
-> The full six-stage pipeline has been verified end to end on **OpenAI only**,
-> with **`gpt-5.4-mini`**, in one configuration: non-interactive, no audio, a
+> Verified end to end on **OpenAI only**, with **`gpt-5.4-mini`** — both
+> non-interactive and with the probe loop and gate answered by hand, using a
 > JSON CV.
 >
-> Everything else is written and covered by the offline test suite, but has
-> **never made a live API call**. That includes:
+> Everything else is covered by the offline test suite but has **never made a
+> live API call**:
 >
 > - the **Anthropic and Gemini providers**
 > - any model other than `gpt-5.4-mini`
-> - **PDF CVs** (the verified run used a JSON CV)
-> - the **interactive** probe loop and gate prompt
+> - **PDF CVs** (every live run so far used a JSON CV)
 > - **audio** rendering, and both TTS backends
 >
 > Treat those as unproven rather than broken — the code may well work, it just
 > has not been watched working. The CLI says so at runtime when you are on an
-> unverified combination, and `peaches version` prints this list.
+> unverified combination, and `peaches version` prints both lists.
 > [DEBRIEF.md](DEBRIEF.md) has the precise state of each, and
-> [METRICS.md](METRICS.md) has what the one verified run actually cost and
-> produced.
+> [METRICS.md](METRICS.md) has what a verified run actually cost and produced.
 
 No uv? `curl -LsSf https://raw.githubusercontent.com/NEkropo1/pitches-peaches/main/install.sh | sh`
 (or `install.ps1` on Windows) installs uv and then the tool.
@@ -320,20 +317,18 @@ about the company, not about you — your CV is not in that request.
 
 ## Cost
 
-Measured, not guessed: **about $0.96 for one complete run** on
-`openai/gpt-5.4-mini` at `medium` effort — 12 model requests, roughly 233k
-input and 126k output tokens, and about 22 web searches. Output is ~59% of the
-bill, web search ~23%.
+Measured, not guessed: **roughly $0.80–$0.95 for one complete run** on
+`openai/gpt-5.4-mini` at `medium` effort — 9 model requests and about 22 web
+searches. Output is ~59% of the bill, web search ~23%.
 
-[METRICS.md](METRICS.md) has the full breakdown, the billing evidence, and an
-honest account of what that number is not.
+[METRICS.md](METRICS.md) has the breakdown, the billing evidence, and an honest
+account of what that number is not.
 
-Two things move it a lot:
+Two things move it:
 
+- **Audio** adds one narration call per document — 12 requests instead of 9.
 - **Model.** The figure above is a mini-tier model. An Opus- or GPT-5-tier
   model is several times more per token.
-- **Audio.** Narration adds three model requests. A run without it makes 9
-  requests instead of 12.
 
 `--effort medium` is a reasonable dial to reach for before changing model,
 because the playbook's depth is the part worth paying for. Re-running a single

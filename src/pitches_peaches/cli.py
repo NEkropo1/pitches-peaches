@@ -15,11 +15,12 @@ import typer
 from rich.console import Console
 
 from . import (
+    UNVERIFIED_PATHS,
     VERIFIED_MODEL,
+    VERIFIED_PATHS,
     VERIFIED_PROVIDER,
     __version__,
     is_verified,
-    verification_notice,
 )
 from .config import (
     CONFIG_FILE,
@@ -531,11 +532,11 @@ def version() -> None:
     """Print the version, and what has actually been tested."""
     console.print(f"pitches-peaches {__version__}")
     console.print()
-    console.print(f"[bold]Verified:[/bold] {VERIFIED_PROVIDER}/{VERIFIED_MODEL}, "
-                  "full pipeline, non-interactive, no audio.")
+    console.print(f"[bold]Verified[/bold] on {VERIFIED_PROVIDER}/{VERIFIED_MODEL}:")
+    for path in VERIFIED_PATHS:
+        console.print(f"  - {path}")
+    console.print()
     console.print("[bold]Unproven[/bold] (written and unit tested, never run live):")
-    from . import UNVERIFIED_PATHS
-
     for path in UNVERIFIED_PATHS:
         console.print(f"  - {path}")
     console.print()

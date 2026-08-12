@@ -9,23 +9,33 @@ __version__ = "0.1.0"
 # ---------------------------------------------------------------------------
 # What has actually been run against a live API.
 #
-# One source of truth, read by the CLI and asserted against the README and the
-# skill wrapper in tests, so the three cannot drift apart. Update this only
-# when a full `pytest --e2e` has genuinely passed on the combination — not when
-# the code merely looks right.
+# One source of truth, read by the CLI and asserted against the README, the
+# skill wrapper and METRICS.md in tests, so they cannot drift apart. Update
+# these only when a run has genuinely happened — not when the code looks right.
+#
+# Keeping verified and unverified as two explicit lists, rather than one list
+# and some prose, is deliberate: the first version of this drifted within a day
+# because the prose said "non-interactive" while the measured run had six typed
+# probe answers in it.
 # ---------------------------------------------------------------------------
 
 #: The provider/model the full six-stage pipeline has been verified on.
 VERIFIED_PROVIDER = "openai"
 VERIFIED_MODEL = "gpt-5.4-mini"
 
+#: Paths that have been driven end to end on the verified provider/model.
+VERIFIED_PATHS = (
+    "the full six-stage pipeline, non-interactive",
+    "the interactive probe loop and gate prompt",
+    "JSON CVs",
+)
+
 #: Paths that remain unproven even on the verified provider/model.
 UNVERIFIED_PATHS = (
     "the Anthropic and Gemini providers",
     "any model other than " + VERIFIED_MODEL,
-    "PDF CVs (the live run used a JSON CV)",
-    "the interactive probe loop and gate prompt",
-    "audio rendering",
+    "PDF CVs (every live run so far used a JSON CV)",
+    "audio rendering, and both TTS backends",
 )
 
 
@@ -33,9 +43,11 @@ def verification_notice() -> str:
     """One paragraph, for anywhere a person might be about to trust this."""
     return (
         f"v{__version__} has been verified end to end on "
-        f"{VERIFIED_PROVIDER}/{VERIFIED_MODEL} only, non-interactive and "
-        "without audio. Everything else is unit tested but has never made a "
-        "live call: " + ", ".join(UNVERIFIED_PATHS) + "."
+        f"{VERIFIED_PROVIDER}/{VERIFIED_MODEL} only, covering "
+        + ", ".join(VERIFIED_PATHS)
+        + ". Everything else is unit tested but has never made a live call: "
+        + ", ".join(UNVERIFIED_PATHS)
+        + "."
     )
 
 

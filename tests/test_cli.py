@@ -142,15 +142,15 @@ import pitches_peaches  # noqa: E402
 ROOT = Path(__file__).parent.parent
 
 
-def test_version_command_prints_what_is_verified():
+def test_version_command_prints_both_lists():
     result = runner.invoke(app, ["version"])
     assert result.exit_code == 0
     assert pitches_peaches.__version__ in result.output
     assert pitches_peaches.VERIFIED_PROVIDER in result.output
     assert pitches_peaches.VERIFIED_MODEL in result.output
-    for path in pitches_peaches.UNVERIFIED_PATHS:
-        # rich wraps, so compare on collapsed whitespace
-        assert " ".join(path.split()) in " ".join(result.output.split())
+    flat = " ".join(result.output.split())  # rich wraps
+    for path in pitches_peaches.VERIFIED_PATHS + pitches_peaches.UNVERIFIED_PATHS:
+        assert " ".join(path.split()) in flat, f"version output omits {path!r}"
 
 
 @pytest.mark.parametrize("doc", ["README.md", "skill/SKILL.md"])
@@ -169,10 +169,57 @@ def test_readme_states_the_version_it_is_making_claims_about():
     assert f"v{pitches_peaches.__version__}" in text
 
 
-def test_readme_names_every_unproven_path():
-    text = " ".join((ROOT / "README.md").read_text(encoding="utf-8").split()).lower()
-    for fragment in ("anthropic and gemini", "pdf cv", "interactive", "audio"):
-        assert fragment in text, f"README does not flag {fragment!r} as unproven"
+def _key_phrase(path: str) -> str:
+    """The distinctive part of an UNVERIFIED_PATHS entry, minus any aside."""
+    return path.split("(")[0].strip().rstrip(",").lower()
+
+
+def _prose(markdown: str) -> str:
+    """Markdown with emphasis removed, so a phrase can be matched across it.
+
+    The README bolds parts of these phrases — "the **Anthropic and Gemini
+    providers**" — which breaks a naive substring match on the prose.
+    """
+    import re
+
+    return " ".join(re.sub(r"[*`_]", "", markdown).split()).lower()
+
+
+@pytest.mark.parametrize("path", pitches_peaches.UNVERIFIED_PATHS)
+def test_readme_names_every_unproven_path(path):
+    """Derived from the code, never hardcoded.
+
+    The hardcoded version of this kept passing after the interactive probe
+    loop had actually been exercised, because the README still contained the
+    word "interactive" — in the phrase "non-interactive". Deriving the list
+    means dropping an entry from UNVERIFIED_PATHS forces the README to change.
+    """
+    text = _prose((ROOT / "README.md").read_text(encoding="utf-8"))
+    assert _key_phrase(path) in text, f"README does not flag {path!r} as unproven"
+
+
+def test_verified_and_unverified_paths_do_not_overlap():
+    """Nothing may be claimed as both proven and unproven."""
+    verified = " ".join(pitches_peaches.VERIFIED_PATHS).lower()
+    for path in pitches_peaches.UNVERIFIED_PATHS:
+        assert _key_phrase(path) not in verified, (
+            f"{path!r} appears in both VERIFIED_PATHS and UNVERIFIED_PATHS"
+        )
+
+
+def test_metrics_request_count_matches_the_configuration_it_states():
+    """The contradiction a reader caught: 12 requests described as a no-audio run.
+
+    METRICS.md documents one run. If it says that run had no audio, it must
+    also say 9 requests — the 12-request figure belongs to an audio run.
+    """
+    text = (ROOT / "METRICS.md").read_text(encoding="utf-8")
+    header = text[: text.index("## Requests per stage")]
+    assert "**no audio**" in header, "METRICS.md no longer states the audio setting"
+    assert "| Model requests | **9** |" in text, (
+        "METRICS.md states a no-audio run but not the 9-request count that "
+        "implies; audio adds three narration calls"
+    )
 
 
 def test_running_on_an_unverified_combination_warns(tmp_path, monkeypatch):

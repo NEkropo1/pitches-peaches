@@ -35,7 +35,7 @@ Two real bugs were caught by writing those tests, not by reading the code: the
 `{{pause:900}}` / `{{placeholder}}` delimiter collision, and unwrapped terminal
 output that ran to 187 columns.
 
-## 2. What the live OpenAI run proved
+## 2. What the live OpenAI runs proved
 
 The full-pipeline test asserts on structure only, so passing it means all of
 this actually works, not just that it did not crash:
@@ -56,6 +56,10 @@ this actually works, not just that it did not crash:
 - Render wrote `00-README.md`, `02-fit.md`, `03-playbook.md`, a self-contained
   `fit.html` with no external references, and standalone `.mermaid` files.
 - The gate recorded its decision and the state machine survived the whole run.
+- **The interactive paths work.** A second run drove the probe loop with six
+  typed answers and confirmed at the gate, then re-scored — so the probe loop,
+  the re-score, and the gate prompt are all exercised. `METRICS.md` measures
+  that run.
 
 ## 3. What is still unexecuted
 
@@ -75,10 +79,12 @@ Everything below has never made or handled a real API response.
     "should" is doing work.
   - PDF document blocks. Never sent one on any provider — the live run used the
     JSON fixture CV, so the `.pdf` path is still untested everywhere.
-- **The interactive paths.** The live run was `--non-interactive`: the match
-  probe loop and the gate's confirm prompt have never been driven by a real
-  person. `peaches run` without `--non-interactive` is untested.
-- **Both TTS paths at the pipeline level.** The live run passed `audio=False`.
+- **Both TTS paths at the pipeline level.** Every live run so far passed
+  `audio=False`, so narration generation and synthesis are still unexecuted.
+  This is also the one that bit the docs: METRICS.md initially quoted a
+  12-request breakdown (which includes three narration calls) while describing
+  a no-audio run, and a reader caught the contradiction against the README.
+  The measured no-audio run makes **9** requests.
 - **The Anthropic and Gemini providers.** OpenAI is now proven; these two are
   not. Their SDK surfaces were introspected against the installed packages
   (`anthropic` 0.121.0, `google-genai` 2.17.0), so signatures and tool types are
