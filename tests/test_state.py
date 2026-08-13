@@ -303,3 +303,59 @@ def test_the_shipped_prompts_forbid_offering_further_help():
 
     voice = render("recon_research")
     assert "writing a file, not a chat reply" in voice
+
+
+# --------------------------------------------------------------------------
+# Shared artifacts — one posting, several CVs
+# --------------------------------------------------------------------------
+
+
+def _paired(tmp_path):
+    """Two run directories under one application, as a workspace lays them out."""
+    application = tmp_path / "01-acme"
+    first = RunState.load_or_create(application / "by-cv" / "backend", shared=application)
+    second = RunState.load_or_create(application / "by-cv" / "platform", shared=application)
+    return application, first, second
+
+
+def test_recon_is_written_once_and_read_by_every_cv(tmp_path):
+    """Recon is three requests and ~22 searches; a second CV must not re-run it."""
+    application, first, second = _paired(tmp_path)
+
+    first.write_json("recon.json", {"company": "Acme"})
+    assert (application / "recon.json").exists()
+    assert not (first.workdir / "recon.json").exists()
+    assert second.has("recon.json")
+    assert second.read_json("recon.json") == {"company": "Acme"}
+
+
+def test_the_cv_dependent_artifacts_stay_apart(tmp_path):
+    application, first, second = _paired(tmp_path)
+
+    first.write_json("match.json", {"overall": 88})
+    assert not second.has("match.json")
+    assert (first.workdir / "match.json").exists()
+
+
+def test_the_company_dossier_is_shared_too(tmp_path):
+    application, first, second = _paired(tmp_path)
+    first.write_text("01-company.md", "# Acme\n")
+    assert (application / "01-company.md").exists()
+    assert second.has("01-company.md")
+
+
+def test_a_run_without_a_shared_directory_is_unchanged(tmp_path):
+    """What -C gives you: one directory holding everything, exactly as before."""
+    state = RunState.load_or_create(tmp_path)
+    state.write_json("recon.json", {"company": "Acme"})
+    assert (tmp_path / "recon.json").exists()
+
+
+def test_a_shared_stage_can_be_recorded_without_pretending_it_ran(tmp_path):
+    application, first, second = _paired(tmp_path)
+    first.record("recon", company="Acme", sources=["https://acme.com"])
+
+    second.adopt("recon", first.stages["recon"])
+    assert second.ran("recon")
+    assert second.stages["recon"]["shared"] is True
+    assert second.stages["recon"]["company"] == "Acme"
