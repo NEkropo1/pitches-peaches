@@ -252,3 +252,32 @@ def test_discovery_returns_none_outside_a_workspace(tmp_path):
 def test_recon_is_the_thing_that_is_shared():
     """If this set grows, something CV-dependent may have been shared by mistake."""
     assert SHARED_ARTIFACTS == {"recon.json", "recon-notes.md", "01-company.md"}
+
+
+def test_the_same_file_named_two_ways_is_one_application(tmp_path, monkeypatch):
+    """The costly way to be wrong: a second application means a second recon.
+
+    Found by running it — `peaches run posting.txt` after an earlier
+    `peaches run /abs/path/posting.txt` created a second application and
+    started researching the company again.
+    """
+    workspace = Workspace.create(tmp_path)
+    posting = tmp_path / "posting.txt"
+    posting.write_text("Senior Backend Engineer", encoding="utf-8")
+
+    first = workspace.new_application(str(posting))
+    monkeypatch.chdir(tmp_path)
+
+    for spelling in ("posting.txt", "./posting.txt", str(posting), f"{tmp_path}/./posting.txt"):
+        found = workspace.find_by_target(spelling)
+        assert found is not None, f"{spelling!r} did not match the stored target"
+        assert found.id == first.id
+
+
+def test_a_genuinely_different_file_is_a_different_application(tmp_path):
+    workspace = Workspace.create(tmp_path)
+    (tmp_path / "a.txt").write_text("A", encoding="utf-8")
+    (tmp_path / "b.txt").write_text("B", encoding="utf-8")
+
+    workspace.new_application(str(tmp_path / "a.txt"))
+    assert workspace.find_by_target(str(tmp_path / "b.txt")) is None

@@ -519,10 +519,20 @@ class Workspace:
 
 
 def _normalise_target(target: str) -> str:
-    """Compare postings loosely enough that a trailing slash is not a new job."""
+    """Compare postings loosely enough that a trailing slash is not a new job.
+
+    A saved posting is resolved to an absolute path, because the alternative is
+    the exact failure this layout exists to prevent: ``peaches run posting.txt``
+    and ``peaches run ./posting.txt`` — or the same file named from two
+    different directories — would not match the stored target, a second
+    application would be created, and the company would be researched again at
+    three requests and twenty searches. Recon is the expensive stage; deciding
+    it is a different posting because the path was spelled differently is the
+    most costly way to be wrong here.
+    """
     cleaned = target.strip().rstrip("/")
     if cleaned.startswith(("http://", "https://")):
         parsed = urlparse(cleaned)
         host = parsed.netloc.lower().removeprefix("www.")
         return f"{host}{parsed.path.rstrip('/')}"
-    return str(Path(cleaned).expanduser())
+    return str(Path(cleaned).expanduser().resolve())

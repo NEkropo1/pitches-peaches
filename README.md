@@ -28,17 +28,19 @@ for you, so this matters only if you install it some other way.
 > Verified end to end on **OpenAI only**, with **`gpt-5.4-mini`** — both
 > non-interactive and with the probe loop and gate answered by hand, using a
 > JSON CV, inside a workspace, with the CV parsed into the shared cache, and
-> with narration synthesized to `.wav` by kokoro.
+> with narration synthesized to `.wav` by kokoro. A second CV was then run
+> against the same posting and reused the research: zero web searches, and
+> `run.json` records that stage as shared rather than performed.
 >
 > Everything else is covered by the offline test suite but has **never made a
 > live API call**:
 >
 > - the **Anthropic and Gemini providers**
 > - any model other than `gpt-5.4-mini`
-> - **PDF CVs** (every live run so far used a JSON CV)
+> - **a complete run on a PDF CV** — the parse is proven, but every run that
+>   went past it used a JSON CV, and quote verification has a different
+>   substrate for a PDF: the extracted profile, since there is no source text
 > - the **macOS `say` backend**
-> - **a second CV reusing a shared recon** — the layout is right and the saving
->   is offline-tested, but no live run has taken it
 >
 > **Audio needs one more install than the extra can express**, and the run
 > offers to do it for you rather than leaving it to this paragraph. Kokoro

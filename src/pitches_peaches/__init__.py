@@ -32,15 +32,16 @@ VERIFIED_PATHS = (
     "JSON CVs",
     "the workspace: one application, one CV, with the CV parsed into the cache",
     "narration scripts, and audio synthesized with kokoro",
+    "a second CV against one posting, reusing the shared recon",
+    "parsing a PDF CV into a profile",
 )
 
 #: Paths that remain unproven even on the verified provider/model.
 UNVERIFIED_PATHS = (
     "the Anthropic and Gemini providers",
     "any model other than " + VERIFIED_MODEL,
-    "PDF CVs (every live run so far used a JSON CV)",
+    "a complete run on a PDF CV (only the parse has been watched)",
     "the macOS say backend",
-    "a second CV reusing a shared recon (the saving is offline-tested only)",
 )
 
 

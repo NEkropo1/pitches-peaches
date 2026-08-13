@@ -112,19 +112,43 @@ change to what is shared. It is the same mistake as re-running recon, one layer
 down, and it should be fixed before anyone runs many CVs against one posting
 with audio on.
 
+## 2d. What the second CV proved, and what it broke on the way
+
+A second CV was run against the posting the first had already researched. It
+reused the research: **zero web searches**, `recon.json` read from the
+application level, and the second run's `run.json` records that stage as
+`shared` rather than pretending it performed it. The two cards then disagreed —
+84/100 and *apply with caveats* for the backend CV, 76/100 and *do not apply*
+for a platform-shaped one with the static-analysis work removed — which is the
+other half of the claim: the saving is in the research, not in the thinking.
+
+Getting there took two attempts, and the first one is the finding.
+
+**`peaches run posting.txt` did not match a stored `/abs/path/posting.txt`.**
+`_normalise_target` expanded `~` but never resolved to an absolute path, so the
+same file named from a different directory read as a different posting. A second
+application was created and the company was researched from scratch — three
+requests and twenty-odd searches, spent to rediscover what was already on disk
+one directory away.
+
+It is worth naming what kind of mistake that is. Every expensive piece of this
+layout hangs off one predicate: *is this the same posting?* That predicate had
+no test for the commonest way a person refers to a file, and the offline suite
+passed throughout, because every test in it used one spelling. Nothing is
+verified by a test that only asks the question the way the author happened to
+ask it.
+
 ## 3. What is still unexecuted
 
 Everything below has never made or handled a real API response.
 
-- **A second CV reusing a shared recon.** One live run has now gone through a
-  workspace end to end: the application directory was created, `recon.json` and
-  `01-company.md` landed at the application level, the CV was parsed into
-  `cvs/.parsed/` behind its cost prompt, five probe answers were collected and
-  promoted to the answer bank, and all six stages completed. What that run did
-  *not* do is come back with a second CV. The saving — recon read from the
-  application level instead of re-researched — is covered by offline tests and
-  by the artifact layout on disk, but no live run has taken the path. It is one
-  `peaches run <same posting> --cv <other>` away.
+- **A complete run on a PDF CV.** The parse itself is proven: a real PDF became
+  a full profile — 74 skills, 7 projects, contacts typed, and a genuine
+  inconsistency surfaced. Nothing has run *past* that on a PDF, and the
+  difference is not cosmetic: with no source text, `cv-source.txt` becomes the
+  extracted profile, so quote verification checks the model's output against
+  the model's own earlier output. That substrate has never been watched
+  rejecting anything. What the same parse got wrong is in §2d.
 
 - **`llm.py` against Anthropic and Gemini.** All three call shapes are proven
   on OpenAI. Against the other two, in particular:
