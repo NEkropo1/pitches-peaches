@@ -248,3 +248,78 @@ def test_the_key_error_names_the_workspace_env_file(ws):
     _add_cv(ws)
     result = runner.invoke(app, ["run", POSTING])
     assert str(ws.root) in result.output
+
+
+# --------------------------------------------------------------------------
+# The guided entry point
+# --------------------------------------------------------------------------
+
+POSTING_TEXT = """Senior Backend Engineer
+
+Acme is hiring a backend engineer to work on our ingestion platform.
+Python, Postgres, Kubernetes. Remote within Europe.
+"""
+
+
+def test_a_pasted_posting_is_saved_so_it_survives_the_terminal(ws):
+    """Resuming tomorrow, and a second CV, both key off a target that still exists."""
+    application = ws.new_application_from_text(POSTING_TEXT)
+
+    saved = application.path / "posting.txt"
+    assert saved.exists()
+    assert "ingestion platform" in saved.read_text(encoding="utf-8")
+    assert application.target == str(saved.resolve())
+
+
+def test_a_pasted_posting_is_named_from_its_first_line(ws):
+    application = ws.new_application_from_text(POSTING_TEXT)
+    assert application.path.name.startswith("01-senior-backend-engineer")
+
+
+def test_pasting_the_same_posting_twice_is_found_by_target(ws):
+    first = ws.new_application_from_text(POSTING_TEXT)
+    assert ws.find_by_target(first.target).id == first.id
+
+
+def test_a_pasted_posting_records_that_it_was_pasted(ws):
+    """So the artifact says where its text came from rather than implying a URL."""
+    application = ws.new_application_from_text(POSTING_TEXT)
+    stored = json.loads(
+        (application.path / "application.json").read_text(encoding="utf-8")
+    )
+    assert stored["pasted"] is True
+
+
+def test_text_with_no_usable_first_line_still_gets_a_directory(ws):
+    application = ws.new_application_from_text("\n\n!!!\n\nsome body text")
+    assert application.path.exists()
+    assert application.path.name.startswith("01-")
+
+
+def test_start_outside_a_workspace_creates_one_without_being_asked(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    for key in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "GEMINI_API_KEY"):
+        monkeypatch.delenv(key, raising=False)
+
+    # Decline at the key prompt; the workspace should still have been scaffolded.
+    result = runner.invoke(app, ["start"], input="\n\n")
+    assert (tmp_path / "cvs").is_dir()
+    assert (tmp_path / "applications").is_dir()
+    assert (tmp_path / "peaches.toml").exists()
+    assert result.exit_code == 1  # no key, so nothing ran
+
+
+def test_start_never_echoes_the_key_it_was_given(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    for key in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "GEMINI_API_KEY"):
+        monkeypatch.delenv(key, raising=False)
+
+    secret = "sk-do-not-print-this-anywhere"
+    result = runner.invoke(app, ["start"], input=f"2\n{secret}\n\n")
+
+    assert secret not in result.output, "a key must never be echoed back to the terminal"
+
+    env = tmp_path / ".env"
+    assert env.exists()
+    assert secret in env.read_text(encoding="utf-8"), "but it is stored, which is the point"
+    assert oct(env.stat().st_mode)[-3:] == "600", "readable only by its owner"

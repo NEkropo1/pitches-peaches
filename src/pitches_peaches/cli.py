@@ -7,6 +7,7 @@ and `run` to do the lot in order.
 from __future__ import annotations
 
 import json
+import os
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -37,11 +38,13 @@ from .llm import LLM, LLMError
 from .prompts import PromptError
 from .state import RunState, StageError
 from .workspace import (
+    CV_SUFFIXES,
     GITIGNORE_WORKSPACE,
     Application,
     CV,
     Workspace,
     WorkspaceError,
+    slugify,
 )
 
 app = typer.Typer(
@@ -193,6 +196,134 @@ def _workspace(workdir: Optional[Path]) -> Workspace | None:
     if workdir is not None:
         return None
     return Workspace.discover(Path.cwd())
+
+
+def _has_key(config_dir: Path) -> bool:
+    load_dotenv(config_dir)
+    return any_key_present()
+
+
+def _ensure_key(config_dir: Path) -> bool:
+    """Offer to write a provider key into ``.env``. True once one is available.
+
+    The key is read without echo and written to a file only this user can read.
+    It is never printed back, never passed on a command line where a shell would
+    keep it in history, and goes nowhere but the provider it belongs to.
+    """
+    if _has_key(config_dir):
+        return True
+
+    console.print()
+    console.print("[bold]No provider key yet.[/bold] One is all this tool ever needs.")
+    options = list(providers.all_providers())
+    for index, provider in enumerate(options, 1):
+        console.print(f"  [bold]{index}[/bold]  {provider.name:<10} {provider.env_key}")
+    console.print()
+    console.print(
+        "[dim]It is written to .env in this workspace, readable only by you, and "
+        "sent only to that provider.[/dim]"
+    )
+
+    try:
+        picked = typer.prompt("Which provider", default="1").strip()
+        provider = options[int(picked) - 1] if picked.isdigit() else next(
+            p for p in options if p.name == picked
+        )
+        value = typer.prompt(f"Paste your {provider.env_key}", hide_input=True).strip()
+    except (EOFError, KeyboardInterrupt, IndexError, StopIteration, ValueError):
+        console.print("[dim]nothing written[/dim]")
+        return False
+
+    if not value:
+        return False
+
+    env = config_dir / ".env"
+    existing = env.read_text(encoding="utf-8") if env.exists() else ""
+    if existing and not existing.endswith("\n"):
+        existing += "\n"
+    env.write_text(f"{existing}{provider.env_key}={value}\n", encoding="utf-8")
+    env.chmod(0o600)
+    os.environ[provider.env_key] = value
+    console.print(f"[green]saved[/green] {provider.env_key} to {env}  [dim](0600)[/dim]")
+    return True
+
+
+def _ensure_cv(workspace: Workspace) -> CV | None:
+    """Point at a CV anywhere on disk; it is copied into the workspace."""
+    available = workspace.cvs()
+    if available:
+        return _pick_cv(workspace, None)
+
+    console.print()
+    console.print("[bold]No CV yet.[/bold] Point me at one and I will copy it in.")
+    console.print("[dim].pdf, .json, .md or .txt — the original is not touched.[/dim]")
+    try:
+        given = typer.prompt("Path to your CV").strip().strip("'\"")
+    except (EOFError, KeyboardInterrupt):
+        return None
+
+    source = Path(given).expanduser()
+    if not source.exists():
+        console.print(f"[red]no file at {source}[/red]")
+        return None
+    if source.suffix.lower() not in CV_SUFFIXES:
+        console.print(f"[red]cannot read a CV from {source.suffix}[/red]")
+        return None
+
+    name = typer.prompt("Call it", default=slugify(source.stem) or "cv").strip()
+    workspace.cvs_dir.mkdir(parents=True, exist_ok=True)
+    target = workspace.cvs_dir / f"{name}{source.suffix}"
+    target.write_bytes(source.read_bytes())
+    console.print(f"[green]copied[/green] {source.name} → {target}")
+    return workspace.cv(name)
+
+
+def _ask_posting(workspace: Workspace) -> tuple[str | None, Application | None]:
+    """A URL, a file, or the text itself. Returns (target, existing application)."""
+    console.print()
+    console.print("[bold]The job posting.[/bold]")
+    console.print("  [bold]1[/bold]  a link")
+    console.print("  [bold]2[/bold]  a file on disk")
+    console.print("  [bold]3[/bold]  paste the text")
+    try:
+        choice = typer.prompt("Which", default="1").strip()
+    except (EOFError, KeyboardInterrupt):
+        return None, None
+
+    if choice == "3":
+        console.print()
+        console.print("[dim]Paste it, then press Ctrl-D on a blank line.[/dim]")
+        text = sys.stdin.read().strip()
+        if not text:
+            console.print("[red]nothing pasted[/red]")
+            return None, None
+        application = workspace.new_application_from_text(text)
+        console.print(
+            f"[green]saved[/green] {len(text.split()):,} words → "
+            f"{application.path.name}/posting.txt"
+        )
+        # Returned as "not existing" on purpose: it was created a line ago, and
+        # the caller reports a found application as one you are continuing.
+        # The stored path is matched again downstream, so it still resolves here.
+        return application.target, None
+
+    try:
+        given = typer.prompt(
+            "Link" if choice == "1" else "Path to the posting"
+        ).strip().strip("'\"")
+    except (EOFError, KeyboardInterrupt):
+        return None, None
+    if not given:
+        return None, None
+
+    if not given.startswith(("http://", "https://")):
+        path = Path(given).expanduser()
+        if not path.exists():
+            console.print(f"[red]no file at {path}[/red]")
+            return None, None
+        given = str(path.resolve())
+
+    return given, workspace.find_by_target(given)
 
 
 def _check_credential(config_dir: Path) -> None:
@@ -1067,6 +1198,70 @@ def run(
     else:
         console.print()
         console.print(f"[green]done[/green] — open {ctx.state.workdir / '00-README.md'}")
+
+
+@app.command()
+def start(
+    audio: Optional[bool] = typer.Option(None, "--audio/--no-audio"),
+    model: Optional[str] = ModelOpt,
+    effort: Optional[str] = EffortOpt,
+    provider: Optional[str] = ProviderOpt,
+) -> None:
+    """Set everything up and run it, asking for what is missing as it goes.
+
+    The same six stages as ``peaches run``; this only gathers what they need
+    first, so nothing has to be arranged by hand before the first run.
+    """
+    here = Path.cwd()
+    workspace = _workspace(None)
+    if workspace is None:
+        workspace = Workspace.create(here)
+        console.print(f"[green]workspace[/green] {workspace.root}")
+        for name, content in (
+            (CONFIG_FILE, CONFIG_TEMPLATE),
+            (".gitignore", GITIGNORE_WORKSPACE),
+        ):
+            if not (workspace.root / name).exists():
+                (workspace.root / name).write_text(content, encoding="utf-8")
+    else:
+        console.print(f"[dim]workspace: {workspace.root}[/dim]")
+
+    if not _ensure_key(workspace.root):
+        _fail(WorkspaceError("no key, so nothing can run yet. Run: peaches start"))
+
+    try:
+        chosen = _ensure_cv(workspace)
+    except WorkspaceError as exc:
+        _fail(exc)
+    if chosen is None:
+        _fail(WorkspaceError("no CV, so there is nothing to score. Run: peaches start"))
+    console.print(f"[dim]cv: {chosen.name}[/dim]")
+
+    target, existing = _ask_posting(workspace)
+    if target is None:
+        _fail(WorkspaceError("no posting, so there is nothing to research."))
+    if existing is not None:
+        console.print(
+            f"[dim]this posting is already application "
+            f"{existing.id:02d} — continuing it[/dim]"
+        )
+
+    console.print()
+    run(
+        target=target,
+        cv=chosen.name,
+        application=existing.id if existing is not None else None,
+        workdir=None,
+        company=None,
+        notes=None,
+        non_interactive=False,
+        audio=audio,
+        force=False,
+        reparse=None,
+        model=model,
+        effort=effort,
+        provider=provider,
+    )
 
 
 @app.command()

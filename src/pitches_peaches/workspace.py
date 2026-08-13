@@ -509,6 +509,45 @@ class Workspace:
         self._bump(id)
         return self._load(id, path, path.name.partition("-")[2])
 
+    def new_application_from_text(self, posting: str) -> Application:
+        """Create an application from posting text somebody pasted.
+
+        The text is written into the application as ``posting.txt`` and becomes
+        the target, because everything downstream — resuming tomorrow, running a
+        second CV against the same posting, not paying for the research twice —
+        keys off a target that still exists when you come back. A paste that
+        lived only in the terminal would be gone by then.
+
+        The handle comes from the first non-empty line, which on a job posting
+        is almost always the title.
+        """
+        first_line = next(
+            (line.strip() for line in posting.splitlines() if line.strip()), ""
+        )
+        id = self.next_id()
+        path = self.applications_dir / f"{id:02d}-{slug_for(first_line) or 'untitled'}"
+        path.mkdir(parents=True, exist_ok=True)
+
+        saved = path / "posting.txt"
+        saved.write_text(posting.rstrip() + "\n", encoding="utf-8")
+        (path / APPLICATION_FILE).write_text(
+            json.dumps(
+                {
+                    "id": id,
+                    "target": str(saved.resolve()),
+                    "label": "",
+                    "created": _now(),
+                    "pasted": True,
+                },
+                indent=2,
+                ensure_ascii=False,
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        self._bump(id)
+        return self._load(id, path, path.name.partition("-")[2])
+
     def find_by_target(self, target: str) -> Application | None:
         """An existing application for this posting, so we can offer to resume it."""
         wanted = _normalise_target(target)
