@@ -1,0 +1,182 @@
+{
+  "company": "Semgrep",
+  "org_type": "scaleup",
+  "headcount_estimate": "150+ full-time Semgreppers (publicly stated Nov. 2024)",
+  "role_title": "Senior Backend Software Engineer",
+  "seniority": "senior",
+  "requirements": [
+    {
+      "text": "design, build and maintain a fast and reliable user experience for our customers.",
+      "kind": "soft",
+      "must_have": true,
+      "evidence": "design, build and maintain a fast and reliable user experience for our customers."
+    },
+    {
+      "text": "develop the APIs, data models and services that power Semgrep’s products at scale.",
+      "kind": "experience",
+      "must_have": true,
+      "evidence": "develop the APIs, data models and services that power Semgrep’s products at scale."
+    },
+    {
+      "text": "strong understanding of databases, query optimization and distributed systems",
+      "kind": "technology",
+      "must_have": true,
+      "evidence": "strong understanding of databases, query optimization and distributed systems"
+    },
+    {
+      "text": "comfortable integrating third-party vendors into existing first-party code",
+      "kind": "technology",
+      "must_have": true,
+      "evidence": "comfortable integrating third-party vendors into existing first-party code"
+    },
+    {
+      "text": "Typescript and React on the Frontend, Python, Flask and SQLAlchemy on the Backend, is deployed via Kubernetes and hosted on AWS.",
+      "kind": "technology",
+      "must_have": false,
+      "evidence": "Our stack utilizes Typescript and React on the Frontend, Python, Flask and SQLAlchemy on the Backend, is deployed via Kubernetes and hosted on AWS."
+    },
+    {
+      "text": "Professional experience with these technologies is preferred but not required provided you are open to learning them quickly!",
+      "kind": "experience",
+      "must_have": false,
+      "evidence": "Professional experience with these technologies is preferred but not required provided you are open to learning them quickly!"
+    },
+    {
+      "text": "join us 3+ days per week in our San Francisco, New York, Boston or Denver offices depending on team.",
+      "kind": "logistics",
+      "must_have": true,
+      "evidence": "This is a hybrid role with the expectation you’ll join us 3+ days per week in our San Francisco, New York, Boston or Denver offices depending on team."
+    },
+    {
+      "text": "Remote employment will be considered for exceptional candidates as well.",
+      "kind": "logistics",
+      "must_have": false,
+      "evidence": "Remote employment will be considered for exceptional candidates as well."
+    }
+  ],
+  "claims": [
+    {
+      "statement": "Semgrep was founded in 2017 by Drew Dennison, Isaac Evans, and Luke O’Malley.",
+      "confidence": "verified",
+      "source": "https://semgrep.dev/about/?utm_source=openai",
+      "why_it_matters": "A founder-led origin usually means technical credibility and product judgment will matter in the room, not just backend delivery."
+    },
+    {
+      "statement": "Semgrep says it reignited the open-source project in 2020 and turned it into the current Semgrep platform.",
+      "confidence": "verified",
+      "source": "https://semgrep.dev/about/?utm_source=openai",
+      "why_it_matters": "That history suggests the company is productizing an existing technical base, so the interview may favor pragmatic evolution over greenfield purity."
+    },
+    {
+      "statement": "Semgrep publicizes scale claims of 40+ languages, 75M+ scans per year, 3000+ community rules, and 100+ releases.",
+      "confidence": "verified",
+      "source": "https://semgrep.dev/about/?utm_source=openai",
+      "why_it_matters": "Those numbers imply a broad, high-throughput product surface, so backend choices likely need to work across many workloads and frequent releases."
+    },
+    {
+      "statement": "The posting says Semgrep is trusted by leading organizations including Vanta, Lyft, and Dropbox.",
+      "confidence": "verified",
+      "source": "job posting",
+      "why_it_matters": "Named customers signal enterprise credibility, so reliability and operational maturity are likely to be judged as business-critical."
+    },
+    {
+      "statement": "Semgrep raised a $100M Series D led by Menlo Ventures in February 2025, with Felicis, Harpoon, Lightspeed, Redpoint, and Sequoia participating.",
+      "confidence": "verified",
+      "source": "https://semgrep.dev/blog/2025/series-d-announcement/?utm_source=openai",
+      "why_it_matters": "A recent large round usually means the company can keep investing, so this role is more likely about scaling than surviving."
+    },
+    {
+      "statement": "Semgrep is now an AppSec platform with Code, Supply Chain, Secrets, Assistant, and a Pro Engine underneath.",
+      "confidence": "verified",
+      "source": "https://semgrep.dev/products/semgrep-appsec-platform/?utm_source=openai",
+      "why_it_matters": "The backend role likely spans multiple product surfaces, so system boundaries are broader than a single feature service."
+    },
+    {
+      "statement": "Semgrep’s paid Teams tier starts at $30/month per contributor, while the Free Edition includes up to 10 repos, 10 contributors, and 60 AI credits.",
+      "confidence": "verified",
+      "source": "https://semgrep.dev/pricing/?utm_source=openai",
+      "why_it_matters": "The business has a self-serve entry point plus expansion pricing, so engineering work can affect conversion and account growth as well as product quality."
+    },
+    {
+      "statement": "Semgrep describes a mixed model with HQ in downtown San Francisco and a satellite office in New York.",
+      "confidence": "verified",
+      "source": "https://semgrep.dev/blog/2024/help-us-rename-semgrep-oss/?utm_source=openai",
+      "why_it_matters": "This is not a fully remote team, so onsite collaboration norms will shape how you work day to day."
+    },
+    {
+      "statement": "Semgrep’s culture language emphasizes speed, audacious bets, users first, debate, and continuous improvement.",
+      "confidence": "verified",
+      "source": "https://semgrep.dev/about/?utm_source=openai",
+      "why_it_matters": "Expect the team to value fast iteration and opinionated problem solving, not just careful implementation."
+    },
+    {
+      "statement": "Semgrep said it had over 150 full-time Semgreppers as of November 1, 2024.",
+      "confidence": "verified",
+      "source": "https://semgrep.dev/blog/2024/help-us-rename-semgrep-oss/?utm_source=openai",
+      "why_it_matters": "The company is large enough to have specialization but still small enough that one backend engineer can influence core systems."
+    },
+    {
+      "statement": "The current hiring footprint suggests Semgrep is still building both product and go-to-market motion at the same time.",
+      "confidence": "inferred",
+      "source": "https://jobs.ashbyhq.com/semgrep/f6382e7f-42be-4186-beed-510f684a2466?utm_source=openai",
+      "why_it_matters": "That usually means backend priorities will be shaped by customer pressure and commercial rollout, not just internal technical elegance."
+    }
+  ],
+  "interviewers": [
+    {
+      "name": "Cathy Polinsky",
+      "role": "co-CTO and VP of Engineering",
+      "background": "Recently joined Semgrep as engineering leader and writes publicly about hackathons, product-centric thinking, and shipping demos.",
+      "what_they_will_probe": "Likely to probe whether you can ship quickly without turning the codebase into a maintenance burden.",
+      "sources": [
+        "https://semgrep.dev/blog/2026/the-ai-hackathon-effect/?utm_source=openai"
+      ]
+    },
+    {
+      "name": "Drew Dennison",
+      "role": "CTO and co-founder",
+      "background": "Public technical face of the company; pre-Semgrep path included Redpoint Ventures EIR.",
+      "what_they_will_probe": "Likely to probe system design, performance, and whether you can make hard tradeoffs without bloating the product.",
+      "sources": [
+        "https://semgrep.dev/events/skynet-or-wall-e-how-ai-is-changing-work-for-security-teams?utm_source=openai",
+        "https://wellfound.com/company/r2cdev/people?utm_source=openai"
+      ]
+    },
+    {
+      "name": "Isaac Evans",
+      "role": "CEO and co-founder",
+      "background": "Before Semgrep, he was at MIT researching binary exploitation and now writes publicly about product and strategy.",
+      "what_they_will_probe": "Likely to probe how your work affects the product architecture, the business, and the AppSec buyer problem.",
+      "sources": [
+        "https://get.semgrep.dev/founder-keynote.html?utm_source=openai",
+        "https://semgrep.dev/blog/2026/mythos-bad-takes-facts-and-fear/?utm_source=openai"
+      ]
+    },
+    {
+      "name": "Luke O’Malley",
+      "role": "CPO and co-founder",
+      "background": "Publicly frames Semgrep around developer-first AppSec; pre-Semgrep path included product and engineering work at Palantir.",
+      "what_they_will_probe": "Likely to probe product judgment and whether your backend decisions make the user experience feel simpler or more brittle.",
+      "sources": [
+        "https://get.semgrep.dev/founder-keynote.html?utm_source=openai",
+        "https://wellfound.com/company/r2cdev/people?utm_source=openai",
+        "https://semgrep.dev/blog/2025/appsec-for-builders-a-manifesto-for-the-future-of-secure-code-development/?utm_source=openai"
+      ]
+    }
+  ],
+  "open_questions": [
+    "How much of this role is customer-facing product work versus platform or infrastructure work?",
+    "Which part of the stack is new build, and which part is legacy Flask/SQLAlchemy code?",
+    "What are the top three backend bottlenecks right now: query latency, scan throughput, triage pipelines, auth/tenant isolation, or vendor integrations?",
+    "How many backend engineers are on the team, and how much of the team is in San Francisco versus distributed?",
+    "What is the current split between free usage and paid accounts, and what does a typical expansion motion look like?",
+    "What is the current interview loop for this specific role, and how many people are in the loop?",
+    "What does “exceptional candidates” mean for remote consideration?",
+    "What is the biggest thing the team thinks the current backend system does well, and the biggest thing it does badly?",
+    "When you say “integrating third-party vendors,” which vendors are you talking about in practice?",
+    "What is the most important tradeoff the team is making right now: precision vs recall, speed vs coverage, or simplicity vs extensibility?"
+  ],
+  "charitable_read": "Semgrep looks like a well-funded, founder-led security platform with real usage scale, frequent releases, and a backend role that sits close to customer value. If you like fast-moving infrastructure in a builder-focused company, this is a high-leverage seat where strong engineering can directly improve product trust and customer experience.",
+  "uncharitable_read": "The same facts could also mean a busy, layered codebase with legacy Flask/SQLAlchemy pieces, performance-sensitive pipelines, and vendor integrations that are already under pressure. The hybrid expectation and the breadth of the product surface suggest you may spend as much time managing complexity and shipping around constraints as you do designing clean new systems.",
+  "known_process": "Public Semgrep intern posts described recruiter screens, take-home coding projects, live technical challenges, a hiring manager screen, and informal calls with the CTO and other team members; the full-time backend loop is not confirmed."
+}

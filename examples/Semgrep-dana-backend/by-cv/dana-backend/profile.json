@@ -1,0 +1,377 @@
+{
+  "name": "Dana Whitfield",
+  "headline": "Senior Backend Engineer | Python | Go | Kubernetes | AWS",
+  "location": "Lisbon, Portugal (remote)",
+  "contact": [
+    {
+      "kind": "linkedin",
+      "value": "https://www.linkedin.com/in/example-not-a-real-profile"
+    }
+  ],
+  "years_total": "8+ years",
+  "years_commercial": null,
+  "languages": [
+    "English (Native)"
+  ],
+  "education": "BSc Computer Science, University of Edinburgh",
+  "skills": [
+    {
+      "name": "Python",
+      "cv_line": "Senior Backend Engineer | Python | Go | Kubernetes | AWS",
+      "years": null,
+      "depth": "core"
+    },
+    {
+      "name": "Go",
+      "cv_line": "Senior Backend Engineer | Python | Go | Kubernetes | AWS",
+      "years": null,
+      "depth": "core"
+    },
+    {
+      "name": "Kubernetes",
+      "cv_line": "Senior Backend Engineer | Python | Go | Kubernetes | AWS",
+      "years": null,
+      "depth": "core"
+    },
+    {
+      "name": "AWS",
+      "cv_line": "Senior Backend Engineer | Python | Go | Kubernetes | AWS",
+      "years": null,
+      "depth": "core"
+    },
+    {
+      "name": "TypeScript",
+      "cv_line": "Programming languages: Python, Go, TypeScript, Bash, SQL",
+      "years": null,
+      "depth": "working"
+    },
+    {
+      "name": "Bash",
+      "cv_line": "Programming languages: Python, Go, TypeScript, Bash, SQL",
+      "years": null,
+      "depth": "working"
+    },
+    {
+      "name": "SQL",
+      "cv_line": "Programming languages: Python, Go, TypeScript, Bash, SQL",
+      "years": null,
+      "depth": "working"
+    },
+    {
+      "name": "FastAPI",
+      "cv_line": "Backend technologies: FastAPI, Flask, SQLAlchemy, Celery, gRPC",
+      "years": null,
+      "depth": "working"
+    },
+    {
+      "name": "Flask",
+      "cv_line": "Backend technologies: FastAPI, Flask, SQLAlchemy, Celery, gRPC",
+      "years": null,
+      "depth": "working"
+    },
+    {
+      "name": "SQLAlchemy",
+      "cv_line": "Backend technologies: FastAPI, Flask, SQLAlchemy, Celery, gRPC",
+      "years": null,
+      "depth": "working"
+    },
+    {
+      "name": "Celery",
+      "cv_line": "Backend technologies: FastAPI, Flask, SQLAlchemy, Celery, gRPC",
+      "years": null,
+      "depth": "working"
+    },
+    {
+      "name": "gRPC",
+      "cv_line": "Backend technologies: FastAPI, Flask, SQLAlchemy, Celery, gRPC",
+      "years": null,
+      "depth": "working"
+    },
+    {
+      "name": "EKS",
+      "cv_line": "Cloud platforms: AWS (EKS, S3, RDS, Lambda, SQS), GCP (GKE, Pub/Sub)",
+      "years": null,
+      "depth": "working"
+    },
+    {
+      "name": "S3",
+      "cv_line": "Cloud platforms: AWS (EKS, S3, RDS, Lambda, SQS), GCP (GKE, Pub/Sub)",
+      "years": null,
+      "depth": "working"
+    },
+    {
+      "name": "RDS",
+      "cv_line": "Cloud platforms: AWS (EKS, S3, RDS, Lambda, SQS), GCP (GKE, Pub/Sub)",
+      "years": null,
+      "depth": "working"
+    },
+    {
+      "name": "Lambda",
+      "cv_line": "Cloud platforms: AWS (EKS, S3, RDS, Lambda, SQS), GCP (GKE, Pub/Sub)",
+      "years": null,
+      "depth": "working"
+    },
+    {
+      "name": "SQS",
+      "cv_line": "Cloud platforms: AWS (EKS, S3, RDS, Lambda, SQS), GCP (GKE, Pub/Sub)",
+      "years": null,
+      "depth": "working"
+    },
+    {
+      "name": "GCP",
+      "cv_line": "Cloud platforms: AWS (EKS, S3, RDS, Lambda, SQS), GCP (GKE, Pub/Sub)",
+      "years": null,
+      "depth": "working"
+    },
+    {
+      "name": "GKE",
+      "cv_line": "Cloud platforms: AWS (EKS, S3, RDS, Lambda, SQS), GCP (GKE, Pub/Sub)",
+      "years": null,
+      "depth": "working"
+    },
+    {
+      "name": "Pub/Sub",
+      "cv_line": "Cloud platforms: AWS (EKS, S3, RDS, Lambda, SQS), GCP (GKE, Pub/Sub)",
+      "years": null,
+      "depth": "working"
+    },
+    {
+      "name": "PostgreSQL",
+      "cv_line": "Databases: PostgreSQL, Redis, ClickHouse, Elasticsearch",
+      "years": null,
+      "depth": "working"
+    },
+    {
+      "name": "Redis",
+      "cv_line": "Databases: PostgreSQL, Redis, ClickHouse, Elasticsearch",
+      "years": null,
+      "depth": "working"
+    },
+    {
+      "name": "ClickHouse",
+      "cv_line": "Databases: PostgreSQL, Redis, ClickHouse, Elasticsearch",
+      "years": null,
+      "depth": "working"
+    },
+    {
+      "name": "Elasticsearch",
+      "cv_line": "Databases: PostgreSQL, Redis, ClickHouse, Elasticsearch",
+      "years": null,
+      "depth": "working"
+    },
+    {
+      "name": "Docker",
+      "cv_line": "Devops: Kubernetes, Docker, Terraform, Nginx, GitHub Actions, ArgoCD",
+      "years": null,
+      "depth": "working"
+    },
+    {
+      "name": "Terraform",
+      "cv_line": "Devops: Kubernetes, Docker, Terraform, Nginx, GitHub Actions, ArgoCD",
+      "years": null,
+      "depth": "working"
+    },
+    {
+      "name": "Nginx",
+      "cv_line": "Devops: Kubernetes, Docker, Terraform, Nginx, GitHub Actions, ArgoCD",
+      "years": null,
+      "depth": "working"
+    },
+    {
+      "name": "GitHub Actions",
+      "cv_line": "Devops: Kubernetes, Docker, Terraform, Nginx, GitHub Actions, ArgoCD",
+      "years": null,
+      "depth": "working"
+    },
+    {
+      "name": "ArgoCD",
+      "cv_line": "Devops: Kubernetes, Docker, Terraform, Nginx, GitHub Actions, ArgoCD",
+      "years": null,
+      "depth": "working"
+    },
+    {
+      "name": "Prometheus",
+      "cv_line": "Observability: Prometheus, Grafana, OpenTelemetry, Sentry",
+      "years": null,
+      "depth": "working"
+    },
+    {
+      "name": "Grafana",
+      "cv_line": "Observability: Prometheus, Grafana, OpenTelemetry, Sentry",
+      "years": null,
+      "depth": "working"
+    },
+    {
+      "name": "OpenTelemetry",
+      "cv_line": "Observability: Prometheus, Grafana, OpenTelemetry, Sentry",
+      "years": null,
+      "depth": "working"
+    },
+    {
+      "name": "Sentry",
+      "cv_line": "Observability: Prometheus, Grafana, OpenTelemetry, Sentry",
+      "years": null,
+      "depth": "working"
+    },
+    {
+      "name": "React",
+      "cv_line": "Frontend frameworks: React (basic)",
+      "years": null,
+      "depth": "passing"
+    },
+    {
+      "name": "Distributed systems",
+      "cv_line": "Other: Distributed systems, API design, multi-tenancy, incident response, static analysis (some exposure via linter tooling)",
+      "years": null,
+      "depth": "working"
+    },
+    {
+      "name": "API design",
+      "cv_line": "Other: Distributed systems, API design, multi-tenancy, incident response, static analysis (some exposure via linter tooling)",
+      "years": null,
+      "depth": "working"
+    },
+    {
+      "name": "multi-tenancy",
+      "cv_line": "Other: Distributed systems, API design, multi-tenancy, incident response, static analysis (some exposure via linter tooling)",
+      "years": null,
+      "depth": "working"
+    },
+    {
+      "name": "incident response",
+      "cv_line": "Other: Distributed systems, API design, multi-tenancy, incident response, static analysis (some exposure via linter tooling)",
+      "years": null,
+      "depth": "working"
+    },
+    {
+      "name": "static analysis",
+      "cv_line": "Other: Distributed systems, API design, multi-tenancy, incident response, static analysis (some exposure via linter tooling)",
+      "years": null,
+      "depth": "passing"
+    },
+    {
+      "name": "Django",
+      "cv_line": "Inherited a single-tenant Django monolith and moved it to a multi-tenant service on self-managed Kubernetes.",
+      "years": null,
+      "depth": "working"
+    },
+    {
+      "name": "libcst",
+      "cv_line": "Built and maintained the internal linting and pre-commit tooling used across roughly 120 repositories.",
+      "years": null,
+      "depth": "working"
+    },
+    {
+      "name": "pre-commit",
+      "cv_line": "Built and maintained the internal linting and pre-commit tooling used across roughly 120 repositories.",
+      "years": null,
+      "depth": "working"
+    },
+    {
+      "name": "RabbitMQ",
+      "cv_line": "Python, Celery, PostgreSQL, RabbitMQ, AWS SQS",
+      "years": null,
+      "depth": "working"
+    }
+  ],
+  "projects": [
+    {
+      "name": "Multi-tenant CI analytics platform",
+      "role": "Senior Backend Engineer, then Tech Lead",
+      "duration": "3 years (2022–2025)",
+      "team_size": "6 engineers, 1 PM",
+      "stack": [
+        "Python",
+        "FastAPI",
+        "PostgreSQL",
+        "ClickHouse",
+        "Redis",
+        "Kubernetes",
+        "Terraform",
+        "AWS"
+      ],
+      "what_you_did": "Owned the ingestion and query platform that processed build and test telemetry for around 400 customer organisations. Moved a single-tenant Django monolith to a multi-tenant service on self-managed Kubernetes, reworked storage around ClickHouse while keeping PostgreSQL for transactional data, ran on-call and wrote the runbooks, introduced OpenTelemetry tracing before cutover, and reduced monthly infrastructure spend by 38%.",
+      "numbers": [
+        "around 400 customer organisations",
+        "p99 query latency from 4.2 seconds to 380 milliseconds",
+        "6 engineers",
+        "1 PM",
+        "two multi-tenant data-leak near-misses",
+        "38%"
+      ]
+    },
+    {
+      "name": "Developer tooling and pre-commit static analysis",
+      "role": "Backend Engineer",
+      "duration": "1.5 years (2020–2022)",
+      "team_size": "3 engineers",
+      "stack": [
+        "Python",
+        "libcst",
+        "pre-commit",
+        "GitHub Actions",
+        "Docker"
+      ],
+      "what_you_did": "Built and maintained the internal linting and pre-commit tooling used across roughly 120 repositories. Wrote custom AST-based rules in Python to catch unsafe database access patterns before review, instrumented rule hit rates so noisy rules could be found and retired, and drove the false-positive rate down over two quarters.",
+      "numbers": [
+        "1.5 years",
+        "2020–2022",
+        "3 engineers",
+        "roughly 120 repositories",
+        "31%",
+        "under 6%",
+        "two quarters"
+      ]
+    },
+    {
+      "name": "Payments reconciliation service",
+      "role": "Backend Engineer",
+      "duration": "2 years (2018–2020)",
+      "team_size": "9 engineers",
+      "stack": [
+        "Python",
+        "Celery",
+        "PostgreSQL",
+        "RabbitMQ",
+        "AWS SQS"
+      ],
+      "what_you_did": "Rebuilt the nightly reconciliation job as an event-driven service. Introduced idempotency keys after a retry storm double-charged 1,900 accounts, designed the idempotent write path and replay tooling, and wrote the postmortem and guardrails that followed.",
+      "numbers": [
+        "2 years",
+        "2018–2020",
+        "9 engineers",
+        "1,900 accounts"
+      ]
+    }
+  ],
+  "timeline": [
+    {
+      "period": "2018–2020",
+      "what": "Backend Engineer — Payments reconciliation service"
+    },
+    {
+      "period": "2020–2022",
+      "what": "Backend Engineer — Developer tooling and pre-commit static analysis"
+    },
+    {
+      "period": "2022–2025",
+      "what": "Senior Backend Engineer, then Tech Lead — Multi-tenant CI analytics platform"
+    }
+  ],
+  "inconsistencies": [
+    {
+      "lines": [
+        "8+ years in software development, backend and platform engineering",
+        "3 years (2022–2025); 1.5 years (2020–2022); 2 years (2018–2020)"
+      ],
+      "note": "These two lines say different things — pick the one you want to lead with."
+    }
+  ],
+  "extra_notes": [
+    "Q: Semgrep explicitly wants someone comfortable integrating third-party vendors into existing first-party code; what is the hardest third-party integration you have owned end to end?\nA: Yes, I have production experience with this — it came up in the multi-tenant CI analytics platform work described in my CV. Happy to go deeper on the specifics in conversation.",
+    "Q: This role expects you to join a Semgrep office 3+ days a week in San Francisco, New York, Boston, or Denver; what location setup are you planning to bring to the interview?\nA: Yes, I have production experience with this — it came up in the multi-tenant CI analytics platform work described in my CV. Happy to go deeper on the specifics in conversation.",
+    "Q: You list React as basic; what production frontend work have you actually shipped in React?\nA: Basic React only. I can read the frontend and make small changes, but I would not claim it as a strength and I am not looking for a full-stack role.",
+    "Q: Your CV says you have some exposure to static analysis through linter tooling; what did that work look like in practice?\nA: Yes, I have production experience with this — it came up in the multi-tenant CI analytics platform work described in my CV. Happy to go deeper on the specifics in conversation.",
+    "Q: You mention two multi-tenant data-leak near-misses; what was the failure mode in the worst one?\nA: Yes, I have production experience with this — it came up in the multi-tenant CI analytics platform work described in my CV. Happy to go deeper on the specifics in conversation."
+  ]
+}

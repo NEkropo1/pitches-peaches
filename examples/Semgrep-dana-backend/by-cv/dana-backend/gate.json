@@ -1,0 +1,16 @@
+{
+  "recommendation": "apply_with_caveats",
+  "reason": "You are a real backend match for this seat: the stack lines up on Python, Flask, SQLAlchemy, PostgreSQL, Redis, AWS, and Kubernetes, and you have the kind of senior ownership they will care about — multi-tenant migration, on-call, runbooks, storage redesign, and a p99 drop from 4.2 seconds to 380 milliseconds. The gap is not engineering depth; it is logistics and domain shape. You are in Lisbon, and this role wants 3+ days a week in San Francisco, New York, Boston, or Denver, with remote only for exceptional candidates. Charitably, that means you are still worth interviewing because your backend record is strong enough to justify an exception; uncharitably, it means the process may stop as soon as they realize the location mismatch. The business-context gap is also real but smaller: you are adjacent to AppSec through linting and static analysis, not native to it, so you need to sound crisp about precision, recall, false positives, and developer trust.",
+  "spread_read": "This is a strong-backend / weak-business-context shape, not a flat score. Your technical, ownership, and delivery numbers are all in the 90s, so you do not need to prove you can build systems; you need to prove you can speak Semgrep’s product language and handle their AppSec tradeoffs. The 68 in business context is the cheapest gap to close, but the Lisbon-versus-US-office issue is the one that can block the interview before any of that matters. Lead with the multi-tenant migration, the p99 latency win, and the linting/static-analysis tooling, then answer the location question plainly and early.",
+  "strongest": [
+    "Exact backend stack overlap: Python, Flask, SQLAlchemy, PostgreSQL, Redis, AWS, Kubernetes.",
+    "Senior ownership is obvious: you have run multi-tenant migration, on-call, runbooks, and storage redesign end to end.",
+    "You have hard numbers: 400 customer organisations and p99 latency down from 4.2s to 380ms."
+  ],
+  "most_damaging": [
+    "You are Lisbon-based, and the role wants 3+ days a week in a US office unless they make an exception.",
+    "React is only basic, so you should not overstate frontend breadth if they ask for production ownership.",
+    "You are adjacent to AppSec rather than coming from an AppSec product loop, so you need to be precise about precision, recall, and false positives."
+  ],
+  "build_first": []
+}

@@ -1,0 +1,33 @@
+This is 02-fit.md, the fit note for Senior Backend Software Engineer at Semgrep. It tells you where you line up well, where the gaps are, and what you should have ready before the interview.{{pause:900}}
+
+The recommendation line says you decide next. PitchesPeaches does not apply to anything, contact anyone, or send anything anywhere, and everything below is built from what you provided about yourself.{{pause:900}}
+
+Overall, you are at eighty-four out of one hundred, which the note calls a strong fit. The technical score is ninety-two, ownership is ninety-three, delivery is ninety, and business context is sixty-eight.{{pause:400}}
+
+On the technical side, you already work in Python, Flask, SQLAlchemy, PostgreSQL, Redis, AWS, and Kubernetes, which lines up cleanly with their backend stack. React is not a strength for you, but this is still a backend-first fit.{{pause:400}}
+
+On ownership, you have owned a platform end to end, including the migration, the on-call, the runbooks, and the storage redesign. That is the kind of scope where they will expect you to make tradeoffs without waiting for permission.{{pause:400}}
+
+On delivery, you shipped for around four hundred customer organisations and cut p ninety-nine query latency from four point two seconds to three hundred and eighty milliseconds. You also drove monthly infrastructure spend down by thirty-eight percent, which signals production delivery under real constraints.{{pause:400}}
+
+On business context, you are adjacent rather than native to AppSec, but your linting and static analysis work is unusually close to Semgrep’s product shape. You will still be learning the buyer language and the security workflow around code scanning and triage.{{pause:900}}
+
+Why you fit, with evidence. First, you already have the backend substrate they are hiring around: Python, Flask, SQLAlchemy, PostgreSQL, Redis, AWS, and Kubernetes. The note points to FastAPI, Flask, SQLAlchemy, Celery, and gRPC as the backend technologies in play.{{pause:400}}
+
+Second, you have done a real multi-tenant migration, which is the kind of architecture call Semgrep will expect from a senior backend seat. The specific example is the move from a single-tenant Django monolith to a multi-tenant service on self-managed Kubernetes.{{pause:400}}
+
+Third, you have worked on the performance shape they care about. The note calls out the p ninety-nine query latency drop from four point two seconds to three hundred and eighty milliseconds.{{pause:400}}
+
+Fourth, your linting and static-analysis work maps directly to an AppSec product that analyzes code and has to keep noise down. The example they give is internal linting and pre-commit tooling used across roughly one hundred and twenty repositories.{{pause:400}}
+
+Fifth, you have already said you have production experience integrating third-party vendors, and the note ties that to the multi-tenant C I analytics platform work in your C V. That is one of the role’s explicit asks.{{pause:400}}
+
+Sixth, you have shipped for around four hundred customer organisations, so this is not a toy-scale backend. The ingestion and query platform you owned processed build and test telemetry for that many customers.{{pause:900}}
+
+There are three gaps the note wants you to keep in view. First, the role is hybrid in a U S office, and you are in Lisbon, while the job expects three or more days a week in San Francisco, New York, Boston, or Denver, with remote only for exceptional candidates. Second, you do not have production React depth, and the role names TypeScript and React on the frontend, so you can read the UI and make small changes, but not own frontend-heavy work. Third, you do not have a direct AppSec product loop, so Semgrep will still probe how you think about precision, recall, false positives, and developer trust in a security product.{{pause:900}}
+
+What to prepare. First, rehearse the multi-tenant migration from the single-tenant Django monolith to self-managed Kubernetes, because that is your cleanest senior-backend story here. Second, have the p ninety-nine latency drop from four point two seconds to three hundred and eighty milliseconds ready, along with the storage split behind it, because Drew will likely push on performance tradeoffs. Third, be ready to walk through the two multi-tenant data-leak near-misses and the guardrails you added, because trust and isolation matter a lot in an AppSec platform. Fourth, lead with the internal linting and pre-commit tooling across roughly one hundred and twenty repositories, because that is the closest bridge from your record to Semgrep’s code-analysis product. Fifth, have a crisp answer for the Lisbon-versus-U S office question, because the hybrid expectation is the main logistics issue that can stop the process early. Sixth, prepare a concrete vendor-integration story with the exact vendor, the data flow, and the failure mode, because that is an explicit part of the role and the interviewers will likely ask for specifics.{{pause:900}}
+
+The open questions are straightforward. First, they want the hardest third-party integration you have owned end to end. Second, they want the location setup you are planning to bring to the interview, because the role expects you in a Semgrep office three or more days a week in San Francisco, New York, Boston, or Denver. Third, they want to know what production frontend work you have actually shipped in React. Fourth, they want to hear what your static-analysis work looked like in practice, since your C V says you have some exposure through linter tooling. Fifth, they want the failure mode in the worst of the two multi-tenant data-leak near-misses.{{pause:900}}
+
+What matters most is that your backend stack lines up, your migration and latency work are strong senior signals, and the two things most likely to slow or stop the process are the office requirement and the gaps in native AppSec and React depth. The next text covers the interview questions you should rehearse.

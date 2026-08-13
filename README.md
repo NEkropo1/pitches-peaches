@@ -69,6 +69,10 @@ No uv? `curl -LsSf https://raw.githubusercontent.com/NEkropo1/pitches-peaches/ma
 
 ## What comes out
 
+**[A complete run is checked in.](examples/Semgrep-dana-backend/)** Real output
+against the fixture posting and CV — the dossier, the card, the diagrams, and
+one narration `.wav`. Read that before installing anything.
+
 A directory of files. `00-README.md` indexes them, `fit.html` is the card, and
 the numbered documents are the dossier:
 

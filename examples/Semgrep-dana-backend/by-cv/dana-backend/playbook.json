@@ -1,0 +1,205 @@
+{
+  "branch": "structured",
+  "rounds": [
+    {
+      "name": "Recruiter screen",
+      "duration": "30 minutes, predicted",
+      "what_is_assessed": "This is mostly a logistics and narrative filter, not a technical one. They are checking whether you understand the hybrid requirement, whether your reason for Semgrep is specific enough to survive a hiring manager call, and whether your background obviously maps to backend work on a security product. In a scaleup like this, a recruiter no-hire usually means one of three things: the location constraint does not work, the level is mismatched, or the story sounds generic enough that the later rounds would waste time.",
+      "how_to_run_it": "A recruiter or talent partner usually drives this with a checklist that is more operational than philosophical. Expect a quick walk through of your current location, whether 3+ days per week in a US office is realistic, salary expectations, timeline, and why this company rather than any other backend role. They will usually let you talk for a few minutes before steering back to the form. The failure note tends to read like 'constraint mismatch', 'insufficient motivation for AppSec', or 'not aligned on hybrid'. Your job is to answer the logistics cleanly and then immediately anchor the rest of the process in the parts of your background that match their backend, data, and multi-tenant work."
+    },
+    {
+      "name": "Hiring manager call",
+      "duration": "45 minutes, predicted",
+      "what_is_assessed": "This round is really about scope judgment and whether you have already operated at the level they need. They are not trying to prove you can code in Python; they are trying to learn whether you can own a backend slice, make tradeoffs under ambiguity, and keep user-facing latency and reliability in the same sentence. At Semgrep, that probably includes whether you can think clearly about data models, query behavior, customer trust, and the difference between a product inconvenience and a security bug.",
+      "how_to_run_it": "A hiring manager or senior backend lead will usually spend the first ten minutes on your recent project history, then drill one story until the tradeoffs are explicit. They often want to hear a migration, a latency win, or an incident story with concrete numbers because those reveal how you think when the system pushes back. A no-hire note at this stage usually says 'good executor, not enough architectural depth', 'answers stayed at the API level', or 'did not demonstrate ownership of failure modes'. The right move is to narrate one or two projects end to end, including the bad parts, and make the tradeoffs visible without being defensive."
+    },
+    {
+      "name": "Technical screen or live coding",
+      "duration": "60 to 90 minutes, predicted",
+      "what_is_assessed": "This is the proof that you can write correct backend code under time pressure and reason about edge cases while somebody watches. At a company like Semgrep, the prompt often looks like data manipulation, request handling, pagination, deduplication, or a small service problem rather than algorithm theater. They are checking whether your code is production-shaped: names are sane, failure handling exists, and you test the cases that actually break backend systems.",
+      "how_to_run_it": "If it is live, expect one engineer to sit with you, ask clarifying questions, and interrupt once the solution is mostly there to probe tests, complexity, and failure cases. If it is a take-home, expect a reviewer to score clarity, correctness, and how close the implementation feels to something they could merge. A no-hire note usually says 'worked but brittle', 'missed edge cases', or 'over-engineered for the problem'. Your best defense is to talk through the state model, identify the idempotency boundary, and show the test cases you would add before anything ships."
+    },
+    {
+      "name": "System design",
+      "duration": "60 minutes, predicted",
+      "what_is_assessed": "This round is the core architecture filter. They are checking whether you can design a fast and reliable user experience at scale, not whether you can draw enough boxes. Given the posting, the real subtext is likely multi-tenancy, query performance, code-analysis or scan workflows, and vendor integrations. A strong answer here shows that you know where correctness must be enforced, where latency matters to the user, and which parts of the design must survive retries, partial failure, and schema drift.",
+      "how_to_run_it": "A senior engineer, staff engineer, or founder may run this, and they will usually expect a structured conversation that starts with user flows and success metrics before any infrastructure detail. They will score you on requirements clarity, data model choice, scale assumptions, operational visibility, and tradeoff quality. A no-hire note usually says 'box-and-arrow only', 'no numbers or bottlenecks', or 'missed tenant isolation and operational failure paths'. The right rhythm is to define the critical path, state the SLO you are protecting, choose the data model, then walk the failure cases and how operators would know the system is degrading."
+    },
+    {
+      "name": "Final loop or panel",
+      "duration": "3 to 4 conversations, each 30 to 45 minutes, predicted",
+      "what_is_assessed": "This is the fit and judgment layer. The founders and senior leaders will likely be asking whether you can move quickly without making the product harder to trust, whether you think from customer pain back to backend design, and whether you can hold a point of view without turning every discussion into a theoretical debate. Because this is Semgrep, product judgment and engineering judgment are probably not separable in the room.",
+      "how_to_run_it": "You are likely to meet one founder or senior leader at a time rather than a single formal panel, and each person will probably follow one thread deeply. One may push on technical tradeoffs, another on product shape, another on speed, and another on how you work in a small, high-context team. A no-hire note usually says 'strong engineer, weaker product judgment', 'did not show user empathy', or 'could build it but not explain why the product should exist that way'. The way to run this well is to connect every technical decision to a customer outcome, then show you know where to be opinionated and where to stay humble."
+    }
+  ],
+  "interviewer_profiles": [
+    {
+      "name": "Cathy Polinsky",
+      "role": "co-CTO and VP of Engineering",
+      "background": "Publicly writes about hackathons, product-centric engineering, and shipping demos quickly. She joined as engineering leadership, so she is likely to care about pace without losing maintainability.",
+      "what_they_will_probe": "She will probably probe whether you can ship quickly, make pragmatic tradeoffs, and keep the codebase from turning into a pile of tactical fixes.",
+      "sources": [
+        "https://semgrep.dev/blog/2026/the-ai-hackathon-effect/?utm_source=openai"
+      ]
+    },
+    {
+      "name": "Drew Dennison",
+      "role": "CTO and co-founder",
+      "background": "He is the public technical face of Semgrep and has a founder-operator background. That usually means he can go very deep on architecture, performance, and why a tradeoff is worth its cost.",
+      "what_they_will_probe": "He will likely probe whether you can reason about scale, latency, and reliability without building unnecessarily complex systems.",
+      "sources": [
+        "https://semgrep.dev/events/skynet-or-wall-e-how-ai-is-changing-work-for-security-teams?utm_source=openai",
+        "https://wellfound.com/company/r2cdev/people?utm_source=openai"
+      ]
+    },
+    {
+      "name": "Isaac Evans",
+      "role": "CEO and co-founder",
+      "background": "He came from technical research and now writes publicly about product and strategy. Expect someone who cares about how engineering choices affect what the company can promise to buyers.",
+      "what_they_will_probe": "He will likely probe whether your backend thinking improves product trust, customer outcomes, and the business shape of the AppSec platform.",
+      "sources": [
+        "https://get.semgrep.dev/founder-keynote.html?utm_source=openai",
+        "https://semgrep.dev/blog/2026/mythos-bad-takes-facts-and-fear/?utm_source=openai"
+      ]
+    },
+    {
+      "name": "Luke O’Malley",
+      "role": "CPO and co-founder",
+      "background": "He has a product and engineering background and publicly frames Semgrep around developer-first AppSec. He is likely to care about whether backend choices make the product feel simpler or more brittle.",
+      "what_they_will_probe": "He will likely probe product judgment, UX consequences of backend decisions, and whether you can make the system feel trustworthy to developers.",
+      "sources": [
+        "https://get.semgrep.dev/founder-keynote.html?utm_source=openai",
+        "https://wellfound.com/company/r2cdev/people?utm_source=openai",
+        "https://semgrep.dev/blog/2025/appsec-for-builders-a-manifesto-for-the-future-of-secure-code-development/?utm_source=openai"
+      ]
+    }
+  ],
+  "pitch_adaptation": "With recruiters, answer the office requirement directly and do not let the conversation drift into vague enthusiasm before the logistics are clear. With Cathy or Luke, lead with the user-facing part of your work: latency reductions, multi-tenant isolation, noisy rule reduction, and how you kept delivery moving without making the system harder to change. With Drew, speak in terms of query plans, failure modes, p99s, retries, and data-model choices. With Isaac, tie backend decisions to product trust, enterprise adoption, and the buyer problem. If anyone asks about location, say the Lisbon reality early and cleanly so nobody builds a false picture of the rest of the process.",
+  "technologies": [
+    {
+      "technology": "Python",
+      "why_it_matters_here": "Their backend stack names Python, Flask, and SQLAlchemy, so they will assume you can write the service code, reason about request scope, and know how Python behaves under load. For a senior backend role, they are more likely to test whether you understand how the interpreter, the web framework, and background workers interact than whether you can recite syntax.",
+      "questions": [
+        {
+          "question": "In a Flask service that uses SQLAlchemy for request handling and Celery for background jobs, how do you stop request-scoped state, tenant identity, and database sessions from leaking across retries or worker boundaries?",
+          "why_this_one": "This is the question that separates someone who has used Flask from someone who has owned production backend state. The obvious answer is 'use context locals and one session per request', but the real engineering is in what breaks once work escapes the request thread.",
+          "answer": "You treat request state as ephemeral and explicit, not as ambient magic. In Flask, the request object and its context are tied to the active request lifecycle, and that works fine while everything stays inside the WSGI request thread. The moment you hand work to Celery, spawn a thread, or retry a job later, you no longer have that context unless you serialize the tenant identity, request correlation ID, and idempotency key into the job payload yourself. That is the first rule: never rely on a thread-local or context-local to survive a process boundary.\n\nFor SQLAlchemy, the safe model is one session per unit of work, with commit or rollback in a finally block and close immediately after. The session has an identity map, so if you reuse it across requests you can read stale in-memory objects and accidentally write back the wrong state. That gets worse when a retry replays a job after the first attempt partially committed. If you are not careful, the second attempt sees cached ORM objects that do not reflect the database truth. In a multi-tenant system, that is not just a correctness bug; it is a data isolation risk.\n\nThe operational pattern is to make tenant identity part of every query boundary, not something inferred from hidden global state. Your request handler resolves the tenant from auth, passes it into the service layer, and the job payload carries it forward. If you use Flask application context for convenience, fine, but only as a bridge inside the request. The durable truth must be in the database row, the message payload, or the signature of the function doing the work. That keeps retries deterministic and makes the failure mode obvious when something goes wrong.",
+          "deep_dives": [
+            {
+              "topic": "What happens when a Celery retry replays after a partial commit",
+              "walkthrough": "The dangerous case is not the happy path; it is the timeout after the database commit but before the response or acknowledgment. If the first attempt committed but the caller never saw success, the retry must be able to recognize the previous success and exit harmlessly. That is why you want an idempotency key stored in a unique column or a separate job ledger. The retry checks that key first, finds the existing terminal record, and returns the already-computed result instead of writing a duplicate row or firing a second vendor callback."
+            }
+          ]
+        },
+        {
+          "question": "Why does Python's dynamic object model make vendor-specific behavior easy to bolt on, and when does that same flexibility become a maintenance trap in a backend service?",
+          "why_this_one": "A senior answer is not 'Python is dynamic'. It is understanding that the same mechanism that makes quick integrations easy also hides contracts, which becomes expensive when the codebase has to support multiple vendor adapters and different failure modes.",
+          "answer": "Python makes vendor-specific behavior easy because method lookup is late-bound and the language privileges conventions over rigid interfaces. You can swap an implementation, monkeypatch a dependency in tests, subclass a base adapter, or inject a callable at runtime without changing every caller. That is useful in a backend that has to talk to multiple external vendors with slightly different payloads and auth behavior, because you can build a thin adapter layer and keep the core service code ignorant of vendor quirks.\n\nThe trap is that dynamic dispatch hides the actual contract. If you rely on subclass overrides or monkeypatches to change behavior, the compiler cannot tell you when a vendor shape changed, a return value gained a new null case, or a base method started doing more work than the override expected. In a large service, that becomes invisible coupling. A developer changes the base class and only discovers the break when a production path hits the wrong override. The problem is not that Python is dynamic; it is that the boundary between shared logic and vendor-specific logic has no durable type or schema check unless you add one yourself.\n\nThe better pattern is composition with small, explicit adapter objects and a normalized internal model. Let the adapter translate the vendor payload into a first-party data structure as early as possible, validate it there, and keep the rest of the service on internal contracts. Then use tests and contract fixtures to make the vendor edge ugly on purpose. That way the dynamism stays at the seam where it is useful, and the rest of the backend gets a stable surface.",
+          "deep_dives": [
+            {
+              "topic": "Why monkeypatching feels fast and why it fails under growth",
+              "walkthrough": "Monkeypatching works because lookup happens at call time, so you can replace a function without changing its callers. That is excellent for a quick test or a one-off vendor shim. It fails at scale because the replacement lives outside the type system, the import graph, and the normal change review path. If a shared helper is patched in one place and imported in another, your behavior depends on import order and test setup. In production, that becomes a hidden dependency that no static analysis tool can easily see."
+            }
+          ]
+        },
+        {
+          "question": "When a Python API spends most of its time waiting on PostgreSQL but still has to shape large JSON responses and verify vendor signatures, what actually controls throughput and tail latency?",
+          "why_this_one": "The obvious answer is to throw more workers at it. The complete answer is about how the GIL, database connections, serialization cost, and blocking I/O interact, and where more parallelism stops helping.",
+          "answer": "In a sync Python web stack, throughput is controlled by how much of each request is blocked on I/O versus CPU and by how many concurrent workers you can support before you saturate the database or memory. While the request is waiting on PostgreSQL or an outbound HTTP call, the interpreter is typically not holding the CPU for pure Python execution, but once it resumes to serialize JSON, walk ORM objects, or verify signatures in Python code, the GIL means only one thread executes Python bytecode in a process at a time. That does not make the system single-threaded overall, but it does mean CPU-heavy post-processing becomes a serialization point inside each worker process.\n\nThe first bottleneck is often not the interpreter; it is connection pool pressure and database latency. If you scale worker count without enough database connections, you just create more blocked workers. If you increase connections too far, you drive up DB contention and memory. The real tuning target is the product of request latency and arrival rate, split by how much time the request spends waiting on the database versus burning CPU in Python. For a user-facing backend, p95 and p99 are usually dominated by a small set of slow queries, cold caches, or retries, not by average interpreter speed.\n\nThe right operational move is to measure where the time goes before changing worker counts. If JSON shaping is expensive, move expensive transformation closer to the database, precompute fields, or stream results instead of materializing huge object graphs. If signature verification is a real cost, push it into a C-backed library or background work if the user flow allows it. More workers help until they expose a different bottleneck; after that, they just multiply the load on the next constrained layer.",
+          "deep_dives": [
+            {
+              "topic": "Why a GIL-bound process can still serve many requests efficiently",
+              "walkthrough": "The GIL does not mean one request at a time across the machine. It means one thread executes Python bytecode in one process at a time. If a request is blocked on I/O, the worker can yield, another worker can run, and the database driver or socket wait is outside the interpreter's critical path. The common failure is assuming that because Python has many threads, CPU work is free. It is not. Once you pile enough pure-Python work into the tail of each request, that work starts lining up behind the GIL and your p99 grows even if average latency looks fine."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "technology": "PostgreSQL",
+      "why_it_matters_here": "The job description explicitly calls out strong understanding of databases and query optimization, and the product shape implies tenant-scoped data, lots of reads, and correctness-sensitive writes. If the team is serving scan results, findings, or vendor-enriched records, PostgreSQL behavior under skew, growth, and schema evolution will be part of the job whether or not they say it out loud.",
+      "questions": [
+        {
+          "question": "A tenant-scoped query that used to return in 20 ms is now timing out. How do you decide whether the problem is bad statistics, the wrong index, table bloat, lock contention, or an ORM query pattern that looked harmless in development?",
+          "why_this_one": "A senior backend engineer is expected to diagnose the layer beneath the symptom. The real skill is not knowing EXPLAIN exists; it is separating the planner, storage, and application-shaped causes that all look like 'slow SQL' from the outside.",
+          "answer": "I would start by proving where the time is actually spent. EXPLAIN ANALYZE tells you whether the planner estimated the cardinality correctly and whether the actual execution spent time on heap reads, index reads, sorts, joins, or row filtering. If the estimated rows are wildly off from actual rows, the planner is making decisions on stale or insufficient statistics. If the plan shape is fine but the buffers show lots of reads, then the cost is likely I/O, bloat, or a missing covering index. If the query is waiting instead of running, the problem may be lock contention or connection pool starvation rather than raw execution time.\n\nFor a tenant-scoped table, the first thing I look at is whether the tenant predicate is leading the relevant index. If the query filters by tenant and then by creation time or status, a composite index that starts with tenant_id is usually the difference between a highly selective lookup and a table walk. If tenant distribution is skewed, a plan that looks good for one tenant may be disastrous for another because the actual row counts differ. Extended statistics can help when columns are correlated, but only if the planner has enough information to use them.\n\nIf performance degrades over time, table bloat and vacuum lag are suspects. A table that has heavy churn can accumulate dead tuples, making heap access more expensive and making the planner's row-count assumptions worse. You confirm that by checking autovacuum activity, dead tuple ratios, and whether old transactions are preventing cleanup. Then there is the ORM-shaped failure: a query that looked fine in dev but actually emits N+1 selects, unnecessary joins, or an accidental cross-tenant scan because the filter was applied too late in the chain. SQLAlchemy can hide that unless you inspect the emitted SQL and correlate it with `pg_stat_statements`.",
+          "deep_dives": [
+            {
+              "topic": "What the planner is deciding when a query gets slower after growth",
+              "walkthrough": "PostgreSQL is not guessing randomly; it is balancing estimated row counts, selectivity, join cost, and I/O cost. If the statistics say a tenant filter is highly selective, it may choose an index path. If reality has changed and the same tenant now owns far more rows than before, the cost model can pick a bad plan or stop using an index entirely. That is why growth changes query shape. The fix is often not 'add more hardware' but 'teach the planner the new data shape' with better indexes, fresh ANALYZE runs, or a query rewrite that makes the selective predicate obvious early."
+            }
+          ]
+        },
+        {
+          "question": "How would you model multi-tenant data so one tenant cannot see another tenant's rows even if a developer writes the wrong query in the application layer?",
+          "why_this_one": "This is the question behind the thing. The obvious answer is 'add tenant_id to every table', but that is only one part of the control plane. The harder part is deciding what to enforce in the database versus the application and what tradeoff you are making by doing so.",
+          "answer": "I would use defense in depth rather than pretending one layer is enough. The first line is that tenant_id exists on every tenant-owned row and is part of the relevant unique and foreign key constraints, so the data model itself encodes the boundary. The second line is that the application resolves tenant identity from auth, not from request parameters, and every repository or query helper receives that resolved tenant context explicitly. The third line, when the risk profile justifies it, is row-level security in PostgreSQL, which forces the database to reject rows that do not match the current tenant context even if the application forgets a predicate.\n\nThe tradeoff with row-level security is that it increases operational complexity. Admin queries, migrations, background jobs, and debugging sessions now need a deliberate path to assume the right role or set the right tenant context. It can also make query plans harder to reason about if policies are not simple. That is why some teams use shared tables plus strong application enforcement for most data and reserve RLS for the most sensitive tables. Separate schemas or separate databases give even stronger blast isolation, but the cost in operations, migrations, and connection management climbs quickly.\n\nWhat I would not do is rely on a convention and hope code review catches every missed filter. The reason is that a multi-tenant bug is a trust failure, not a normal bug. You want the database to make the wrong query hard to run, not just embarrassing to write.",
+          "deep_dives": [
+            {
+              "topic": "Why row-level security is powerful and why it changes how you debug",
+              "walkthrough": "RLS pushes tenant filtering into the engine, which means the database can reject unauthorized rows even when application code is wrong. That is excellent for safety, but it also means a slow or empty result is no longer just an application bug; it may be a policy issue. Operators need a clear way to inspect whether the policy, the session variable, or the query itself caused the result. Without that, people lose time chasing phantom data problems that are really authorization mistakes."
+            }
+          ]
+        },
+        {
+          "question": "What does a safe online schema migration look like when a hot table backs user-visible scans and you need to change the write path without pausing traffic?",
+          "why_this_one": "A senior backend engineer is expected to keep shipping while the data model evolves. The obvious answer is 'add a column and backfill it', but the real work is managing locks, retries, and the period when both the old and new shapes are live.",
+          "answer": "The safest pattern is expand, migrate, contract. First, add the new structure in a backward-compatible way, which usually means nullable columns, new tables, or a shadow write path rather than a destructive change. Then deploy code that can write to both old and new shapes if necessary. Backfill in bounded chunks so you do not monopolize the database or create replication lag. Once the new shape is populated and verified, switch reads over, watch for regressions, and only then remove the old path.\n\nThe practical details matter. Large transactions can hold locks long enough to hurt live traffic, so chunking and commit boundaries are essential. Indexes should be created concurrently if the table is hot, because a blocking index build on a busy table can take the system hostage. If the migration requires a data type change, a shadow column often beats an in-place rewrite because you control the cutover point and can validate the copied data before relying on it. If the table is tenant-scoped, the backfill order should usually respect tenant size or write rate so you do not accidentally make your noisiest customer the migration bottleneck.\n\nThe failure mode you are protecting against is not just downtime. It is partial correctness, where some requests see the old shape and some see the new one. That is why dual-read and dual-write periods need explicit guardrails, metrics, and a rollback plan that does not assume the world stayed still while you migrated it.",
+          "deep_dives": [
+            {
+              "topic": "Why concurrent index creation and chunked backfills matter",
+              "walkthrough": "On a hot table, the database is already serving reads and writes. A blocking migration adds long-held locks to that live workload, which can stall request latency and pile up retries. Concurrent index creation avoids the worst lock behavior at the cost of taking longer and requiring more patience. Chunked backfills prevent one migration job from monopolizing I/O or transaction memory. The operator sees slower but steady progress instead of a cliff edge."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "technology": "Distributed systems",
+      "why_it_matters_here": "Their product sits at the intersection of scans, findings, and outside systems. The posting calls out vendor integrations and the public product surface suggests fanout, retries, and multi-tenant fairness are not theoretical. If backend work touches scan orchestration, webhook handling, or external services, distributed-systems judgment will be the difference between a feature and a support burden.",
+      "questions": [
+        {
+          "question": "When a scan or enrichment job fans out to multiple workers and one external vendor, where do you make the operation idempotent so retries do not duplicate findings or create double accounting?",
+          "why_this_one": "This is the most likely senior-level question because it forces you to reason about job boundaries, durable state, and external side effects. The obvious answer is 'use retries', but retries without an idempotency boundary are how backend systems create duplicate customer-visible state.",
+          "answer": "You want the idempotency boundary at the first durable write after accepting the unit of work, not at the external vendor call and not in a thread-local cache. The clean pattern is to assign a stable idempotency key to the logical unit of work, such as tenant plus repository plus revision plus scan type, and record that in a durable table with a unique constraint. The job processor checks that table before doing any external side effect. If the job already reached a terminal state, the retry becomes a no-op or a safe replay.\n\nExternal calls should still carry request identifiers when the vendor supports them, but you cannot rely on the vendor as your only dedupe layer because their retry semantics are not under your control. If a timeout occurs after the vendor completed the work, your retry needs to notice that the first attempt already committed locally or that the vendor already accepted the request. That is why many teams separate the logical scan run from the individual vendor calls and store each step with its own status. Then a retry can resume from the last known safe point instead of re-running the entire pipeline.\n\nThe important part is that the first durable write and the final observable side effect are both protected. If you get that wrong, you end up with duplicate findings, duplicate notifications, or customer-facing state that is impossible to reconcile after the fact.",
+          "deep_dives": [
+            {
+              "topic": "The timeout-after-success failure mode",
+              "walkthrough": "The worst case is a network timeout after the remote system succeeded but before you saw the response. From the caller's perspective, the job failed; from the vendor's perspective, it already happened. If you retry blindly, you create duplicates. If you store a stable idempotency record before the external call and mark it terminal only once the workflow is complete, you can detect that the second attempt is not a fresh request. Operators then see one logical job with multiple attempts rather than two customer-visible side effects."
+            }
+          ]
+        },
+        {
+          "question": "How do you keep one noisy tenant or one slow vendor integration from starving everyone else in a shared backend queue?",
+          "why_this_one": "This is where distributed systems becomes product quality. A strong answer shows that you understand fairness, admission control, and why FIFO is often the wrong default in a multi-tenant product.",
+          "answer": "You do not let the queue be a single undifferentiated pile if tenant fairness matters. I would separate work by class, either with per-tenant partitions or at least with priority queues that distinguish interactive work from background backfills and long-running vendor calls. Then I would cap concurrency per tenant so one large customer cannot consume all workers. That cap can be a token bucket, a lease system, or a scheduler that actively rotates through tenants instead of draining one queue to empty.\n\nThe second layer is to keep slow external calls from occupying the same worker pool that serves latency-sensitive work. If enrichment from a vendor is slow or unreliable, it should not block all scan processing. Split the pipeline into stages so the user-facing stage can complete and the slower stage can finish asynchronously. Measure queue age per tenant and per stage, because average queue depth hides starvation. If the system can degrade, it should shed noncritical work first rather than letting everything slow down equally.\n\nIn practice, fairness is partly technical and partly product policy. If a tenant pays for faster processing or if some paths are user-visible while others are not, that should influence the scheduler. The system should make those tradeoffs explicit instead of pretending FIFO is neutral.",
+          "deep_dives": [
+            {
+              "topic": "Why FIFO fails in a multi-tenant backend",
+              "walkthrough": "FIFO is fair only if jobs are similar. Once you mix small jobs, large scans, and slow vendor waits, the queue becomes a head-of-line blocking machine. A long job at the front delays everything behind it. The operators see rising latency with no obvious CPU spike because the system is busy, just not in a way that helps users. Fair scheduling breaks that coupling by giving each tenant or work class a bounded turn."
+            }
+          ]
+        },
+        {
+          "question": "Third-party vendors change payloads, rate-limit you, or expire auth mid-flight. What does a resilient integration layer actually own, and what should it refuse to own?",
+          "why_this_one": "Semgrep explicitly cares about vendor integration, so the senior answer is not just 'write a client'. It is understanding the contract boundary, schema drift, retry semantics, and how much vendor failure the first-party product should absorb.",
+          "answer": "The integration layer should own translation, validation, retries, and observability at the boundary. Internally, the rest of the service should never depend directly on raw vendor payloads if you can avoid it. Normalize the response into a first-party model as soon as possible, validate the fields that matter, and keep the raw payload only if you need replay, audit, or forensic debugging. That gives the product one shape to reason about even when vendors all speak different dialects.\n\nThe layer should also own failure classification. A 429 or 5xx is retriable and should back off. A schema mismatch or invalid credential is not retriable in the same way and needs alerting or operator action. Rate limits should feed back into your scheduler so you stop hammering the vendor in a loop. Authentication refresh has to be explicit and testable, not hidden inside a random helper, because expired tokens are one of the most common production integration failures.\n\nWhat it should refuse to own is the illusion that the vendor is stable. The integration should not assume field presence forever, should not bury semantic changes under permissive parsing, and should not let a vendor outage corrupt the core product state. If the vendor is down, the user-facing system should degrade in a controlled way and preserve enough state to resume cleanly later.",
+          "deep_dives": [
+            {
+              "topic": "Schema drift and why permissive parsing is a trap",
+              "walkthrough": "Permissive parsing feels safe because the code keeps running, but it often converts a vendor contract change into silent data loss. If the vendor removes or renames a field, a parser that quietly defaults to null can propagate incomplete state into your product without any alert. That is worse than a hard failure because nobody knows the data is wrong. Strict validation plus a clear error path makes the break obvious, and storing raw payloads gives you a way to reprocess once the vendor fixes their side."
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "closing_questions": [
+    "How much of the backend roadmap in the next two quarters is product feature work versus platform work and vendor integration work?",
+    "Which part of the current stack is still legacy Flask and SQLAlchemy code, and what has already been modernized?",
+    "What is the biggest backend bottleneck right now: query latency, scan throughput, tenant isolation, auth, or third-party integrations?",
+    "When a vendor fails or changes a payload shape, where does ownership sit for retries, backfills, and customer-facing status?",
+    "How are you thinking about precision versus recall in the product today, and which backend metrics tell you that you are on the right side of that tradeoff?",
+    "What does exceptional remote consideration mean in practice for a senior engineer based outside the US?"
+  ]
+}
