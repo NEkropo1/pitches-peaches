@@ -11,7 +11,10 @@ STAGE_PROMPTS = [
     "recon_extract",
     "recon_document",
     "profile",
+    "probes",
     "match",
+    "match_probes_wanted",
+    "match_probes_collected",
     "gate",
     "playbook",
     "playbook_structured",
@@ -46,9 +49,27 @@ def test_placeholders_substitute():
 
 
 def test_match_prompt_states_the_trust_posture():
-    out = render("match", recon="{}", profile="{}")
+    out = render("match", probes_note="", recon="{}", profile="{}")
     assert "self-reported" in out  # named in the ban list
     assert "true" in out.lower()
+
+
+def test_probes_prompt_shares_the_trust_posture():
+    out = render("probes", recon="{}", profile="{}")
+    assert "do you actually" in out  # its own ban list, aimed at interrogation
+    assert "it's worth noting" in out  # and the shared voice rules reached it
+
+
+def test_match_probe_branches_are_mutually_exclusive():
+    """One branch asks for probes; the other forbids them. Never both."""
+    wanted = render("match", probes_note=render("match_probes_wanted"),
+                    recon="{}", profile="{}")
+    collected = render("match", probes_note=render("match_probes_collected"),
+                       recon="{}", profile="{}")
+    assert "Keep it under eight questions" in wanted
+    assert "empty `probes` list" in collected
+    assert "empty `probes` list" not in wanted
+    assert "Keep it under eight questions" not in collected
 
 
 def test_playbook_forbids_the_textbook_questions_by_name():
@@ -74,6 +95,7 @@ def test_no_prompt_has_an_unresolved_placeholder_after_render():
         "cv": "x", "profile": "{}", "match": "{}", "document": "x",
         "process": "x", "branch": "structured", "branch_instructions": "x",
         "max_technologies": 3, "max_questions_per_tech": 3, "seniority": "senior",
+        "probes_note": "x",
     }
     for name in STAGE_PROMPTS:
         # {{pause:N}} is TTS marker syntax the narration prompt teaches, not a

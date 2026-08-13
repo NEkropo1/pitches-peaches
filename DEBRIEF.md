@@ -61,6 +61,14 @@ this actually works, not just that it did not crash:
   the re-score, and the gate prompt are all exercised. `METRICS.md` measures
   that run.
 
+  **The match stage has since been restructured** and that specific shape no
+  longer exists: the questions now come from their own small call before
+  anything is scored, and the card is generated once with the answers already
+  in it. The new shape is covered by `tests/test_match.py` — including the
+  regression that put it there — but **the probe call has never made a live
+  request**, on any provider. It is the newest unexecuted thing in the project.
+  `pytest --e2e --provider openai` closes it.
+
 ## 3. What is still unexecuted
 
 Everything below has never made or handled a real API response.

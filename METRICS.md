@@ -4,6 +4,21 @@ What one complete pipeline run costs and produces. Every figure is either
 measured from artifacts on disk or read off the provider's billing page —
 nothing is estimated by token-counting the output.
 
+> ### ⚠️ These figures predate the match restructure
+>
+> Everything below measures the pipeline **as it was on 2026-08-12**, when the
+> match stage scored in full, collected probe answers, and then scored in full
+> a second time. That stage now asks first and scores once — one small call for
+> the questions, one card generated with the answers already in it.
+>
+> The request *count* for an interactive run is unchanged at 9, but one of the
+> two long generations is gone, replaced by a much smaller one. The cost below
+> is therefore an **upper bound** on the current pipeline, not a measurement of
+> it. Nothing here has been re-measured, and it will not be until the usage
+> receipt described at the bottom of this file exists — guessing at the new
+> number from the shape of the change is exactly the mistake this document was
+> written to stop.
+
 **The run measured here:** 2026-08-12 · `openai` / `gpt-5.4-mini` (served as
 `gpt-5.4-mini-2026-03-17`) · effort `medium` · **interactive** (six probe
 answers typed by hand, gate confirmed) · **no audio** · JSON CV.
@@ -28,7 +43,7 @@ rather than after. Audio in particular changes the request count by a third.
 |---|---:|---|
 | recon | 3 | grounded research, structured extraction, the dossier |
 | profile | 1 | CV extraction |
-| match | 2 | initial score, then a re-score after the probe answers |
+| match | 2 | initial score, then a re-score after the probe answers *(now: one small call for the questions, then one score)* |
 | gate | 1 | the recommendation |
 | playbook | 1 | the whole playbook in one call |
 | render | 1 | the diagrams |
@@ -39,7 +54,8 @@ Two things move this:
 - **Audio** adds one narration call per document — **3 more**, so 12 in total.
   This run did not render audio (`run.json` records `render: {audio: false}`).
 - **Skipping the probe loop** with `--non-interactive` removes the match
-  re-score, so 8 instead of 9. The card is then marked provisional.
+  re-score, so 8 instead of 9. The card is then marked provisional. *(Still 8
+  after the restructure: a non-interactive run skips the probe call too.)*
 
 ## Cost
 
@@ -68,7 +84,12 @@ below.
 
 Roughly **59% output, 23% web search, 18% input**. Output dominates because it
 includes reasoning tokens and the discarded first match draft: the pipeline
-generates a full `Match`, takes the probe answers, and re-scores, by design.
+generated a full `Match`, took the probe answers, and re-scored, by design.
+
+That design is what the restructure removed. Measuring this split is what made
+the waste visible — "output is 59% of the bill, and one of the two biggest
+generations in it is thrown away" is not a thing you notice by reading the
+code.
 
 At published `gpt-5.4-mini` rates ($0.75/M input, $4.50/M output, $0.01 per
 search) the two runs together imply roughly **467k input and 251k output

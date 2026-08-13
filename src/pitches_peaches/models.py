@@ -206,6 +206,19 @@ class Probe(BaseModel):
     )
 
 
+class ProbeSet(BaseModel):
+    """Stage 3a — what to ask, decided before anything has been scored.
+
+    Its own call, and a deliberately small one. Asking "what is missing here"
+    needs the posting and the CV; it does not need a finished match card. The
+    pipeline used to get these by scoring in full, showing a draft, and then
+    scoring again from scratch — which paid for one of the longest generations
+    in the run twice and threw the first one away.
+    """
+
+    probes: list[Probe] = Field(default_factory=list)
+
+
 class Match(BaseModel):
     overall: int = Field(ge=0, le=100)
     band: Literal["strong", "possible", "weak"]

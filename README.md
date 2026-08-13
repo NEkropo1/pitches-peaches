@@ -155,7 +155,7 @@ missing — naming the command that produces it.
 |---|---|
 | `recon` | Researches the company with web search, then writes a typed record and `01-company.md`. |
 | `profile` | Parses your CV — `.json`, `.md`, `.txt`, or `.pdf` — into structured form. |
-| `match` | Scores the role against you on four dimensions, then asks you follow-up questions and re-scores. |
+| `match` | Works out what your CV leaves open, asks you, then scores the role against you on four dimensions with your answers already in hand. |
 | `gate` | Recommends apply, apply-with-caveats, or don't. You decide. |
 | `playbook` | Predicts what they will ask and answers it at depth. |
 | `render` | Diagrams, the index, `fit.html`, and optionally narration audio. |
