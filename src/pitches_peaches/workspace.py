@@ -73,6 +73,19 @@ CV_SUFFIXES = {".json", ".md", ".txt", ".markdown", ".rst", ".pdf"}
 
 SLUG_MAX = 40
 
+#: A workspace holds your CV and dossiers about jobs you are applying to. Both
+#: are personal, and neither belongs in a repository by accident — so the
+#: default is to ignore them and let anyone who wants them committed say so.
+GITIGNORE_WORKSPACE = """\
+.env
+cvs/
+applications/
+*.wav
+*.mp3
+*.aiff
+__pycache__/
+"""
+
 
 # --------------------------------------------------------------------------
 # Naming — pure string work, no network, no model, no waiting for one

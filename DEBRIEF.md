@@ -73,6 +73,17 @@ this actually works, not just that it did not crash:
 
 Everything below has never made or handled a real API response.
 
+- **The whole workspace layer.** `peaches init`, `cv add/ls/parse`, `ls`,
+  `resume`, and the `applications/NN-slug/by-cv/<name>/` layout are covered by
+  offline tests — the handle function, the id rules, the shared-recon routing,
+  the CV cache and its staleness prompts, and the CLI paths that stop before a
+  model call. What has **never** happened is a live run through it: no dossier
+  has been produced inside a workspace, no CV has been parsed into the cache
+  against a real API, and no second CV has actually reused a shared recon with
+  money on the line. The single-directory `-C` path is the one with live runs
+  behind it. This is the newest and largest unproven surface in the project,
+  and it is the first thing to exercise next.
+
 - **`llm.py` against Anthropic and Gemini.** All three call shapes are proven
   on OpenAI. Against the other two, in particular:
   - `research()`'s `pause_turn` resume loop. I have never seen a `pause_turn`

@@ -13,7 +13,10 @@ constraint is the product.
 ```bash
 uv tool install pitches-peaches
 export ANTHROPIC_API_KEY=...     # or OPENAI_API_KEY, or GEMINI_API_KEY
-peaches run https://the-job-posting --cv ~/cv.pdf -C runs/acme
+
+peaches init                     # a workspace here
+peaches cv add ~/cv.pdf          # free; parsing happens on first use
+peaches run https://the-job-posting
 ```
 
 It is provider-agnostic: set whichever key you have and it uses that one.
@@ -144,6 +147,57 @@ WHAT TO PREPARE
 
 Every quote is verbatim from the CV. Any the model could not find there was
 dropped before the card was rendered.
+
+## Several applications, several CVs
+
+A job search is not one run. `peaches init` makes a workspace, and everything
+after that is organised for you:
+
+```
+├── cvs/
+│   ├── backend-senior.pdf          yours, never touched
+│   ├── platform-lead.md
+│   └── .parsed/                    derived; delete it and it rebuilds
+└── applications/
+    ├── 01-semgrep/
+    │   ├── recon.json              shared by every CV below
+    │   ├── 01-company.md
+    │   └── by-cv/
+    │       ├── backend-senior/     the dossier, as shown above
+    │       └── platform-lead/
+    └── 02-acme/
+```
+
+```bash
+peaches ls                          # the board: what exists and how far it got
+peaches resume 1                    # continue where you left off
+peaches run <posting> --cv platform-lead    # a second CV, same posting
+```
+
+**Recon sits above the CV split, and that is the point.** Researching the
+company is three model requests and around twenty web searches — roughly 40% of
+a run — and it does not depend on your CV at all. Trying a second CV against a
+posting you have already researched reuses it and costs nothing extra.
+
+**Your CV is parsed once.** The cache stores the SHA-256 of the file it read,
+so an edited CV is noticed rather than silently scored against a version you
+have since rewritten. Nothing is parsed without asking first, because that is a
+model call and it is your money — and a run that finds a changed CV with nobody
+there to ask refuses and names the command rather than guessing.
+
+**What you type into the probe loop can be kept.** Those answers are CV
+material you never wrote down. Say yes when asked and they follow that CV into
+every future application, so each one asks fewer questions and produces a card
+with more evidence behind it.
+
+Handles like `01-semgrep` are computed from the URL by string work alone — no
+model call, and no waiting for one. The company and role shown by `peaches ls`
+are read back out of `recon.json` once it exists. Ids are never reused: delete
+`02` and the next application is `03`, so a path you saved somewhere never
+quietly comes to mean a different job.
+
+`-C <dir>` is unchanged and bypasses all of this, putting one run in one
+directory exactly as before.
 
 ## How it works
 
