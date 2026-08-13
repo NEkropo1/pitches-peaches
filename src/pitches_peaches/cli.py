@@ -594,10 +594,21 @@ def _want_audio(flag: Optional[bool], llm: LLM, interactive: bool) -> Optional[b
             "scripts only — you can synthesize them later.[/dim]"
         )
     else:
+        # Two costs, and conflating them is the reason this wording changed:
+        # the rewrite is the model call, the voice is free. Somebody reasonably
+        # read "synthesized with say — one model call" as paying for the .wav.
         console.print(
-            f"[dim]Narration is written for the ear and synthesized with "
-            f"{backend.name}. It costs one more model call per document and a "
-            f"few minutes.[/dim]"
+            "[dim]Each document is rewritten for the ear first — acronyms "
+            "expanded, tables and links removed, pauses marked. That is one "
+            "model call per document, and the scripts are kept and reused.[/dim]"
+        )
+        upgrade = (
+            backend.name != "kokoro" and tts.kokoro_is_only_missing_its_model()
+        )
+        voice = "kokoro, once its pronunciation model is installed" if upgrade else backend.name
+        console.print(
+            f"[dim]Turning those scripts into audio is free and local, with "
+            f"{voice}. It takes a few minutes per document.[/dim]"
         )
     try:
         return typer.confirm("Render narration audio?", default=False)
