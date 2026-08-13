@@ -69,20 +69,48 @@ this actually works, not just that it did not crash:
   request**, on any provider. It is the newest unexecuted thing in the project.
   `pytest --e2e --provider openai` closes it.
 
+## 2b. What the first workspace run broke
+
+The run that verified the workspace also killed itself at the last stage, and
+the failure is worth recording because no offline test could have found it.
+
+**Audio ended the process at exit 1 after every model call had been paid for.**
+Kokoro's grapheme-to-phoneme layer fetches a spaCy model on first use. spaCy's
+downloader picks `sys.executable -m pip` whenever *any* `pip` is on `PATH` — and
+inside a uv-created virtualenv there is no `pip` module, so the command fails
+and the downloader calls `sys.exit()`. `SystemExit` is not an `Exception`, so it
+went through every handler in this project untouched.
+
+Three things were wrong, not one:
+
+1. **Nothing caught it.** Synthesis now catches `BaseException` and re-raises
+   only `KeyboardInterrupt`. Audio is the last and most optional thing a run
+   does; everything expensive is already on disk by the time it starts, so a
+   voice that will not synthesize is a note, never the end of the run.
+2. **`available()` was answering the wrong question.** It checked that kokoro
+   imports, not that synthesis works. It now checks the spaCy model too, so
+   `auto` falls back to `say` rather than choosing a backend that will explode.
+3. **The first fix printed a command that does not work.** `uv pip install
+   en_core_web_sm` fails — spaCy models are not on PyPI. The hint is now the
+   release wheel URL, which was run before being written down.
+
+This is the second time measuring something has been worth more than reading
+it, and the pattern is the same as the cost estimate in `METRICS.md`: the code
+looked right, and had never been watched.
+
 ## 3. What is still unexecuted
 
 Everything below has never made or handled a real API response.
 
-- **The whole workspace layer.** `peaches init`, `cv add/ls/parse`, `ls`,
-  `resume`, and the `applications/NN-slug/by-cv/<name>/` layout are covered by
-  offline tests — the handle function, the id rules, the shared-recon routing,
-  the CV cache and its staleness prompts, and the CLI paths that stop before a
-  model call. What has **never** happened is a live run through it: no dossier
-  has been produced inside a workspace, no CV has been parsed into the cache
-  against a real API, and no second CV has actually reused a shared recon with
-  money on the line. The single-directory `-C` path is the one with live runs
-  behind it. This is the newest and largest unproven surface in the project,
-  and it is the first thing to exercise next.
+- **A second CV reusing a shared recon.** One live run has now gone through a
+  workspace end to end: the application directory was created, `recon.json` and
+  `01-company.md` landed at the application level, the CV was parsed into
+  `cvs/.parsed/` behind its cost prompt, five probe answers were collected and
+  promoted to the answer bank, and all six stages completed. What that run did
+  *not* do is come back with a second CV. The saving — recon read from the
+  application level instead of re-researched — is covered by offline tests and
+  by the artifact layout on disk, but no live run has taken the path. It is one
+  `peaches run <same posting> --cv <other>` away.
 
 - **`llm.py` against Anthropic and Gemini.** All three call shapes are proven
   on OpenAI. Against the other two, in particular:

@@ -16,18 +16,56 @@ from .normalize import estimate_duration, normalize_for_speech, strip_pause_mark
 SAMPLE_RATE = 24_000
 INSTALL_HINT = 'uv tool install "pitches-peaches[audio]"'
 
+#: Kokoro's grapheme-to-phoneme layer (misaki) needs this spaCy model, and it
+#: is not a package dependency of anything — misaki fetches it on first use.
+G2P_MODEL = "en_core_web_sm"
+G2P_VERSION = "3.8.0"
+
+#: The wheel URL, not ``uv pip install en_core_web_sm`` — spaCy models are not
+#: published to PyPI, so the bare name fails with "no versions of
+#: en-core-web-sm". Not ``python -m spacy download`` either: that is the path
+#: that breaks here in the first place, because it shells out to a pip a
+#: uv-created virtualenv does not have. A URL is ugly and will need bumping
+#: when spaCy's major version moves, but it is the one that works.
+G2P_HINT = (
+    f"uv pip install https://github.com/explosion/spacy-models/releases/"
+    f"download/{G2P_MODEL}-{G2P_VERSION}/{G2P_MODEL}-{G2P_VERSION}-py3-none-any.whl"
+)
+
 
 class KokoroBackend:
     name = "kokoro"
 
     def available(self) -> bool:
+        """Whether synthesis will actually work — not merely whether it imports.
+
+        The spaCy model is checked here because of what happens when it is
+        absent: misaki asks spaCy to download it, spaCy shells out to
+        ``sys.executable -m pip``, and inside a uv-created venv there is no pip
+        module, so the downloader calls ``sys.exit()``. That is a ``SystemExit``
+        raised from the middle of synthesis, and the run it kills has already
+        paid for every document it was about to narrate.
+
+        Reporting unavailable instead lets ``auto`` fall back to a backend that
+        works, and lets the caller print an install line — which is what this
+        project does everywhere else something is missing.
+        """
         return all(
             importlib.util.find_spec(mod) is not None
-            for mod in ("kokoro", "soundfile", "numpy")
+            for mod in ("kokoro", "soundfile", "numpy", G2P_MODEL)
         )
 
     def synthesize(self, text: str, out: Path, voice: str, rate: int) -> Result:
         if not self.available():
+            missing_g2p = importlib.util.find_spec(G2P_MODEL) is None and all(
+                importlib.util.find_spec(mod) is not None
+                for mod in ("kokoro", "soundfile", "numpy")
+            )
+            if missing_g2p:
+                raise BackendUnavailable(
+                    f"kokoro is installed but its {G2P_MODEL} pronunciation "
+                    "model is not. Install it with:\n  " + G2P_HINT
+                )
             raise BackendUnavailable(
                 "kokoro is not installed. Install it with:\n  " + INSTALL_HINT
             )

@@ -2,6 +2,8 @@
 
 import pytest
 
+from pitches_peaches.config import Config
+from pitches_peaches.state import RunState
 from pitches_peaches.tts import select
 from pitches_peaches.tts.normalize import (
     estimate_duration,
@@ -96,3 +98,84 @@ def test_backend_none_disables_audio():
 def test_unavailable_named_backend_returns_none_rather_than_raising():
     # kokoro is an optional extra; on a machine without it this must not throw.
     assert select("kokoro") is None or select("kokoro").name == "kokoro"
+
+
+# --------------------------------------------------------------------------
+# A backend that fails must never end the run
+# --------------------------------------------------------------------------
+
+
+class _Exploding:
+    """A backend that calls sys.exit() from inside synthesize().
+
+    Not hypothetical. Kokoro's grapheme-to-phoneme layer downloads a spaCy
+    model on first use, and spaCy's downloader calls sys.exit() when the
+    install command fails — which it does inside a uv-created virtualenv,
+    because there is no pip module there. This killed a complete run at the
+    very last stage, after every model call had been paid for.
+    """
+
+    name = "exploding"
+
+    def available(self) -> bool:
+        return True
+
+    def synthesize(self, text, out, voice, rate):
+        raise SystemExit(1)
+
+
+def test_a_backend_that_exits_does_not_take_the_run_with_it(tmp_path, monkeypatch):
+    from pitches_peaches import tts as tts_module
+    from pitches_peaches.stages import render
+
+    monkeypatch.setattr(tts_module, "select", lambda name: _Exploding())
+
+    state = RunState.load_or_create(tmp_path)
+    state.write_text("scripts/01-company.txt", "A narration script.")
+    lines: list[str] = []
+
+    render._synthesize(state, Config(), [("01-company", "A narration script.")], lines.append)
+
+    joined = "\n".join(lines)
+    assert "could not synthesize 01-company" in joined
+    assert "scripts/01-company.txt" in joined, "the script must still be pointed at"
+    assert not (tmp_path / "scripts" / "01-company.wav").exists()
+
+
+def test_a_keyboard_interrupt_still_stops_everything(tmp_path, monkeypatch):
+    """Degrading is for failures, not for the reader asking it to stop."""
+    from pitches_peaches import tts as tts_module
+    from pitches_peaches.stages import render
+
+    class _Interrupted(_Exploding):
+        def synthesize(self, text, out, voice, rate):
+            raise KeyboardInterrupt
+
+    monkeypatch.setattr(tts_module, "select", lambda name: _Interrupted())
+    state = RunState.load_or_create(tmp_path)
+
+    with pytest.raises(KeyboardInterrupt):
+        render._synthesize(state, Config(), [("01-company", "x")], lambda _: None)
+
+
+def test_kokoro_without_its_pronunciation_model_reports_unavailable(monkeypatch):
+    """So `auto` falls back instead of choosing a backend that will explode."""
+    import importlib.util
+
+    from pitches_peaches.tts.kokoro import G2P_MODEL, KokoroBackend
+
+    real = importlib.util.find_spec
+    monkeypatch.setattr(
+        importlib.util,
+        "find_spec",
+        lambda name: None if name == G2P_MODEL else real(name),
+    )
+    assert KokoroBackend().available() is False
+
+
+def test_the_pronunciation_model_hint_is_a_url_not_a_package_name():
+    """`uv pip install en_core_web_sm` fails — spaCy models are not on PyPI."""
+    from pitches_peaches.tts.kokoro import G2P_HINT
+
+    assert G2P_HINT.startswith("uv pip install https://")
+    assert G2P_HINT.endswith(".whl")

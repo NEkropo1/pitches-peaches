@@ -208,7 +208,23 @@ def _write_audio(state: RunState, llm: LLM, report: Reporter) -> None:
         report("no documents to narrate")
         return
 
-    backend = tts_module.select(llm.config.tts_backend)
+    _synthesize(state, llm.config, scripts, report)
+
+
+def _synthesize(
+    state: RunState,
+    config,
+    scripts: list[tuple[str, str]],
+    report: Reporter,
+) -> None:
+    """Turn written scripts into audio, or explain why not.
+
+    Its own function so the failure path is reachable from a test: the bug that
+    put it here only shows up when a backend blows up part-way through, which
+    is precisely what no happy-path test exercises.
+    """
+    scripts_dir = Path("scripts")
+    backend = tts_module.select(config.tts_backend)
     if backend is None:
         report("")
         report("Scripts are written, but no TTS backend is available. Install one:")
@@ -218,12 +234,44 @@ def _write_audio(state: RunState, llm: LLM, report: Reporter) -> None:
     report(f"synthesizing with {backend.name}")
     for stem, script in scripts:
         out = state.artifact_path(str(scripts_dir / f"{stem}.wav"))
-        estimate = estimate_duration(script, llm.config.rate)
+        estimate = estimate_duration(script, config.rate)
         report(f"  {stem} (~{estimate / 60:.0f} min)")
-        result = backend.synthesize(
-            script, out, llm.config.voice, llm.config.rate
-        )
+        try:
+            result = backend.synthesize(
+                script, out, config.voice, config.rate
+            )
+        except BaseException as exc:  # noqa: BLE001 — see below
+            # BaseException, not Exception, and this is the whole point.
+            #
+            # Kokoro's grapheme-to-phoneme layer downloads a spaCy model on
+            # first use, and spaCy's downloader calls sys.exit() when the
+            # install command fails — which it does inside a uv-created venv,
+            # because there is no pip module there and spaCy prefers
+            # `sys.executable -m pip` whenever *any* pip is on PATH. The
+            # SystemExit that comes back is not an Exception, so it sails
+            # through every handler in this project and takes the process with
+            # it.
+            #
+            # Audio is the last and most optional thing a run does. Everything
+            # expensive is already on disk by now, so a voice that will not
+            # synthesize is a note, never the end of the run.
+            if isinstance(exc, KeyboardInterrupt):
+                raise
+            report(f"  could not synthesize {stem}: {_why(exc)}")
+            report(f"  the script is still at scripts/{stem}.txt")
+            continue
         report(
             f"  wrote {result.path.name} — {result.seconds / 60:.1f} min, "
             f"{result.words:,} words, {result.voice} @ {result.rate}wpm"
         )
+
+
+def _why(exc: BaseException) -> str:
+    """A one-line reason, since a SystemExit carries a status and no message."""
+    if isinstance(exc, SystemExit):
+        return (
+            "the backend exited while preparing itself. This is usually kokoro "
+            "downloading its spaCy model with a pip that the environment does "
+            "not have — see `peaches version` for the fix"
+        )
+    return str(exc) or exc.__class__.__name__

@@ -23,11 +23,12 @@ It is provider-agnostic: set whichever key you have and it uses that one.
 It needs **Python 3.14+** — `uv tool install` fetches a suitable interpreter
 for you, so this matters only if you install it some other way.
 
-> ### ⚠️ v0.1.1: what has actually been run
+> ### ⚠️ v0.1.2: what has actually been run
 >
 > Verified end to end on **OpenAI only**, with **`gpt-5.4-mini`** — both
 > non-interactive and with the probe loop and gate answered by hand, using a
-> JSON CV.
+> JSON CV, inside a workspace, with the CV parsed into the shared cache, and
+> with narration synthesized to `.wav` by kokoro.
 >
 > Everything else is covered by the offline test suite but has **never made a
 > live API call**:
@@ -35,11 +36,28 @@ for you, so this matters only if you install it some other way.
 > - the **Anthropic and Gemini providers**
 > - any model other than `gpt-5.4-mini`
 > - **PDF CVs** (every live run so far used a JSON CV)
-> - **audio** rendering, and both TTS backends
+> - the **macOS `say` backend**
+> - **a second CV reusing a shared recon** — the layout is right and the saving
+>   is offline-tested, but no live run has taken it
 >
-> Treat those as unproven rather than broken — the code may well work, it just
-> has not been watched working. The CLI says so at runtime when you are on an
-> unverified combination, and `peaches version` prints both lists.
+> **Audio needs one more install than the extra gives you.** Kokoro's
+> pronunciation model is fetched on first use by a downloader that shells out
+> to `pip`, which a uv-created virtualenv does not have — so
+> `uv tool install "pitches-peaches[audio]"` is not enough on its own:
+>
+> ```bash
+> uv pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl
+> ```
+>
+> The URL rather than the name is deliberate: spaCy models are not on PyPI, so
+> `uv pip install en_core_web_sm` fails, and `python -m spacy download` is the
+> path that is broken here to begin with. Without the model, `peaches` reports
+> kokoro unavailable, falls back to macOS voices where it can, and leaves the
+> narration scripts on disk either way — a backend that fails cannot end a run.
+>
+> Treat the rest as unproven rather than broken — the code may well work, it
+> just has not been watched working. The CLI says so at runtime when you are on
+> an unverified combination, and `peaches version` prints both lists.
 > [DEBRIEF.md](DEBRIEF.md) has the precise state of each, and
 > [METRICS.md](METRICS.md) has what a verified run actually cost and produced.
 
