@@ -8,6 +8,7 @@ artifact is missing, and names the command that produces it.
 from __future__ import annotations
 
 import json
+import os
 import re
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -177,6 +178,19 @@ class RunState:
 
     def has(self, name: str) -> bool:
         return self.artifact_path(name).exists()
+
+    def link_to(self, name: str) -> str:
+        """How to reach an artifact from inside this run directory.
+
+        Usually just the name. For the posting-scoped artifacts under a
+        workspace it is ``../../01-company.md``, because one copy is shared by
+        every CV — and a dossier index that links to a sibling which is two
+        levels up is a broken link in the first thing the reader opens.
+        """
+        target = self.artifact_path(name)
+        if target.parent == self.workdir:
+            return name
+        return os.path.relpath(target, self.workdir).replace(os.sep, "/")
 
     def require(self, *names: str) -> None:
         """Refuse to continue unless every named artifact is on disk."""

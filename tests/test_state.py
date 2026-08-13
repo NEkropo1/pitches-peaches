@@ -359,3 +359,21 @@ def test_a_shared_stage_can_be_recorded_without_pretending_it_ran(tmp_path):
     assert second.ran("recon")
     assert second.stages["recon"]["shared"] is True
     assert second.stages["recon"]["company"] == "Acme"
+
+
+def test_the_index_links_reach_a_shared_document(tmp_path):
+    """00-README.md is the first thing opened; its links must resolve."""
+    application, first, _ = _paired(tmp_path)
+    first.write_text("01-company.md", "# Acme\n")
+    first.write_text("02-fit.md", "# Fit\n")
+
+    assert first.link_to("02-fit.md") == "02-fit.md"
+    assert first.link_to("01-company.md") == "../../01-company.md"
+    resolved = (first.workdir / first.link_to("01-company.md")).resolve()
+    assert resolved == (application / "01-company.md").resolve()
+
+
+def test_a_single_directory_run_links_to_plain_names(tmp_path):
+    state = RunState.load_or_create(tmp_path)
+    assert state.link_to("01-company.md") == "01-company.md"
+    assert state.link_to("recon.json") == "recon.json"

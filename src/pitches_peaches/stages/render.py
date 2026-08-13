@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Callable
 
 from .. import tts as tts_module
+from ..tts import install as tts_install
 from ..cards import html_card, mermaid_block
 from ..llm import LLM
 from ..models import Diagrams, Match, Playbook
@@ -20,6 +21,8 @@ from ..state import RunState
 from ..tts.normalize import estimate_duration
 
 Reporter = Callable[[str], None]
+#: ``(question, default) -> bool``. ``None`` means nobody is there to answer.
+Confirm = Callable[[str, bool], bool]
 
 DOCUMENTS = [
     ("01-company.md", "The company, the product, and the people"),
@@ -34,6 +37,7 @@ def run(
     *,
     audio: bool | None = None,
     report: Reporter = lambda _: None,
+    confirm: Confirm | None = None,
 ) -> None:
     state.require("recon.json", "match.json")
     recon = state.read_json("recon.json")
@@ -49,7 +53,7 @@ def run(
 
     want_audio = llm.config.audio if audio is None else audio
     if want_audio:
-        _write_audio(state, llm, report)
+        _write_audio(state, llm, report, confirm)
     else:
         report("audio: off (pass --audio to render narration)")
 
@@ -134,7 +138,7 @@ def _write_index(state: RunState, recon: dict, match: Match, report: Reporter) -
     ]
     for name, blurb in DOCUMENTS:
         if state.has(name):
-            lines.append(f"1. [{name}]({name}) — {blurb}")
+            lines.append(f"1. [{name}]({state.link_to(name)}) — {blurb}")
     if state.has("04-diagrams.md"):
         lines.append("1. [04-diagrams.md](04-diagrams.md) — the system and the process")
     lines.append("")
@@ -169,8 +173,8 @@ def _write_index(state: RunState, recon: dict, match: Match, report: Reporter) -
         "| File | What it is |",
         "|---|---|",
         "| `run.json` | Which stages ran, and the decision you made |",
-        "| `recon.json` | The company record, every claim labelled |",
-        "| `recon-notes.md` | Raw research notes with sources |",
+        f"| `{state.link_to('recon.json')}` | The company record, every claim labelled |",
+        f"| `{state.link_to('recon-notes.md')}` | Raw research notes with sources |",
         "| `profile.json` | Your CV, structured, plus anything you added |",
         "| `match.json` | The fit card data |",
         "| `gate.json` | The recommendation and why |",
@@ -181,7 +185,9 @@ def _write_index(state: RunState, recon: dict, match: Match, report: Reporter) -
     report("wrote 00-README.md")
 
 
-def _write_audio(state: RunState, llm: LLM, report: Reporter) -> None:
+def _write_audio(
+    state: RunState, llm: LLM, report: Reporter, confirm: Confirm | None = None
+) -> None:
     scripts_dir = Path("scripts")
     scripts: list[tuple[str, str]] = []
 
@@ -208,7 +214,7 @@ def _write_audio(state: RunState, llm: LLM, report: Reporter) -> None:
         report("no documents to narrate")
         return
 
-    _synthesize(state, llm.config, scripts, report)
+    _synthesize(state, llm.config, scripts, report, confirm)
 
 
 def _synthesize(
@@ -216,6 +222,7 @@ def _synthesize(
     config,
     scripts: list[tuple[str, str]],
     report: Reporter,
+    confirm=None,
 ) -> None:
     """Turn written scripts into audio, or explain why not.
 
@@ -225,6 +232,16 @@ def _synthesize(
     """
     scripts_dir = Path("scripts")
     backend = tts_module.select(config.tts_backend)
+
+    if backend is None or backend.name != "kokoro":
+        # Kokoro installed but mute is the common case, not an exotic one: the
+        # audio extra cannot express its own pronunciation model as a
+        # dependency. Offer the one wheel that fixes it, then look again.
+        if tts_module.kokoro_is_only_missing_its_model() and (
+            tts_install.ensure_pronunciation_model(confirm=confirm, report=report)
+        ):
+            backend = tts_module.select(config.tts_backend)
+
     if backend is None:
         report("")
         report("Scripts are written, but no TTS backend is available. Install one:")

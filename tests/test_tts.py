@@ -179,3 +179,105 @@ def test_the_pronunciation_model_hint_is_a_url_not_a_package_name():
 
     assert G2P_HINT.startswith("uv pip install https://")
     assert G2P_HINT.endswith(".whl")
+
+
+# --------------------------------------------------------------------------
+# Offering to install what audio needs
+# --------------------------------------------------------------------------
+
+
+def test_nothing_is_installed_without_being_asked(monkeypatch):
+    """This writes to the environment the tool runs in. It always asks first."""
+    import importlib
+
+    from pitches_peaches.tts import install as tts_install
+
+    monkeypatch.setattr(importlib.util, "find_spec", lambda name: None)
+    monkeypatch.setattr(tts_install, "_uv", lambda: "/usr/bin/uv")
+
+    def refuse(*args, **kwargs):
+        raise AssertionError("ran an install command without confirming")
+
+    monkeypatch.setattr(tts_install.subprocess, "run", refuse)
+
+    assert tts_install.ensure_pronunciation_model(confirm=lambda q, d: False) is False
+    # ...and a non-interactive run has nobody to ask, so it installs nothing.
+    assert tts_install.ensure_pronunciation_model(confirm=None) is False
+
+
+def test_the_offer_names_the_exact_command(monkeypatch):
+    import importlib
+
+    from pitches_peaches.tts import install as tts_install
+
+    monkeypatch.setattr(importlib.util, "find_spec", lambda name: None)
+    monkeypatch.setattr(tts_install, "_uv", lambda: "/usr/bin/uv")
+    monkeypatch.setattr(tts_install.subprocess, "run", lambda *a, **k: None)
+
+    said: list[str] = []
+    tts_install.ensure_pronunciation_model(
+        confirm=lambda q, d: False, report=said.append
+    )
+    joined = "\n".join(said)
+    assert "en_core_web_sm" in joined
+    assert ".whl" in joined, "the reader can run it by hand, so show the real command"
+
+
+def test_a_failed_install_is_reported_not_swallowed(monkeypatch):
+    import importlib
+    import subprocess
+
+    from pitches_peaches.tts import install as tts_install
+
+    monkeypatch.setattr(importlib.util, "find_spec", lambda name: None)
+    monkeypatch.setattr(tts_install, "_uv", lambda: "/usr/bin/uv")
+    monkeypatch.setattr(
+        tts_install.subprocess,
+        "run",
+        lambda *a, **k: subprocess.CompletedProcess(a[0], 1, "", "no network"),
+    )
+
+    said: list[str] = []
+    ok = tts_install.ensure_pronunciation_model(
+        confirm=lambda q, d: True, report=said.append
+    )
+    assert ok is False
+    assert "install failed" in "\n".join(said)
+    assert "by hand" in "\n".join(said)
+
+
+def test_an_install_that_lies_about_succeeding_is_caught(monkeypatch):
+    """returncode 0 but still not importable must not be reported as success."""
+    import importlib
+    import subprocess
+
+    from pitches_peaches.tts import install as tts_install
+
+    monkeypatch.setattr(importlib.util, "find_spec", lambda name: None)
+    monkeypatch.setattr(tts_install, "_uv", lambda: "/usr/bin/uv")
+    monkeypatch.setattr(
+        tts_install.subprocess,
+        "run",
+        lambda *a, **k: subprocess.CompletedProcess(a[0], 0, "", ""),
+    )
+
+    said: list[str] = []
+    assert tts_install.ensure_pronunciation_model(
+        confirm=lambda q, d: True, report=said.append
+    ) is False
+    assert "still not importable" in "\n".join(said)
+
+
+def test_without_uv_it_says_so_rather_than_guessing_a_python(monkeypatch):
+    import importlib
+
+    from pitches_peaches.tts import install as tts_install
+
+    monkeypatch.setattr(importlib.util, "find_spec", lambda name: None)
+    monkeypatch.setattr(tts_install.shutil, "which", lambda name: None)
+
+    said: list[str] = []
+    assert tts_install.ensure_pronunciation_model(
+        confirm=lambda q, d: True, report=said.append
+    ) is False
+    assert "uv is not on PATH" in "\n".join(said)

@@ -40,20 +40,23 @@ for you, so this matters only if you install it some other way.
 > - **a second CV reusing a shared recon** — the layout is right and the saving
 >   is offline-tested, but no live run has taken it
 >
-> **Audio needs one more install than the extra gives you.** Kokoro's
-> pronunciation model is fetched on first use by a downloader that shells out
+> **Audio needs one more install than the extra can express**, and the run
+> offers to do it for you rather than leaving it to this paragraph. Kokoro
+> fetches a pronunciation model on first use with a downloader that shells out
 > to `pip`, which a uv-created virtualenv does not have — so
-> `uv tool install "pitches-peaches[audio]"` is not enough on its own:
+> `uv tool install "pitches-peaches[audio]"` is not enough on its own. When you
+> ask for audio and only that model is missing, you are asked once:
 >
-> ```bash
-> uv pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl
+> ```
+> Kokoro needs the en_core_web_sm pronunciation model, which its own
+> installer cannot fetch inside a uv environment. It is a ~12 MB download:
+>   uv pip install --python … en_core_web_sm-3.8.0-py3-none-any.whl
+> Install en_core_web_sm now? [Y/n]:
 > ```
 >
-> The URL rather than the name is deliberate: spaCy models are not on PyPI, so
-> `uv pip install en_core_web_sm` fails, and `python -m spacy download` is the
-> path that is broken here to begin with. Without the model, `peaches` reports
+> Say no, or run non-interactively, and nothing is installed: `peaches` reports
 > kokoro unavailable, falls back to macOS voices where it can, and leaves the
-> narration scripts on disk either way — a backend that fails cannot end a run.
+> narration scripts on disk either way. A backend that fails cannot end a run.
 >
 > Treat the rest as unproven rather than broken — the code may well work, it
 > just has not been watched working. The CLI says so at runtime when you are on

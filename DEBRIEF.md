@@ -98,6 +98,20 @@ This is the second time measuring something has been worth more than reading
 it, and the pattern is the same as the cost estimate in `METRICS.md`: the code
 looked right, and had never been watched.
 
+## 2c. Known cost leak: narration is per-CV
+
+`scripts/*.txt` are written into the per-CV run directory, so a second CV
+against the same posting re-narrates `01-company.md` — one model call for a
+document that is byte-for-byte the one the first CV already paid to narrate.
+The company narration depends on the posting, exactly like the document it
+reads from, so it belongs beside `01-company.md` at the application level.
+
+Not fixed here because `SHARED_ARTIFACTS` is a flat set of filenames and these
+are nested paths, which is a change to how sharing is expressed rather than a
+change to what is shared. It is the same mistake as re-running recon, one layer
+down, and it should be fixed before anyone runs many CVs against one posting
+with audio on.
+
 ## 3. What is still unexecuted
 
 Everything below has never made or handled a real API response.

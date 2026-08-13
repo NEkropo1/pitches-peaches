@@ -27,10 +27,11 @@ G2P_VERSION = "3.8.0"
 #: that breaks here in the first place, because it shells out to a pip a
 #: uv-created virtualenv does not have. A URL is ugly and will need bumping
 #: when spaCy's major version moves, but it is the one that works.
-G2P_HINT = (
-    f"uv pip install https://github.com/explosion/spacy-models/releases/"
+G2P_WHEEL = (
+    f"https://github.com/explosion/spacy-models/releases/"
     f"download/{G2P_MODEL}-{G2P_VERSION}/{G2P_MODEL}-{G2P_VERSION}-py3-none-any.whl"
 )
+G2P_HINT = f"uv pip install {G2P_WHEEL}"
 
 
 class KokoroBackend:

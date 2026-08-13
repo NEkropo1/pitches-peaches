@@ -921,6 +921,7 @@ def render(
             ),
             audio=audio,
             report=_step,
+            confirm=_confirm_with_default,
         )
     except (WorkspaceError, StageError, LLMError, providers.ProviderError, PromptError) as exc:
         _fail(exc)
@@ -1032,7 +1033,11 @@ def run(
 
         console.rule("[bold]render")
         render_stage.run(
-            state, llm, audio=_want_audio(audio, llm, interactive), report=_step
+            state,
+            llm,
+            audio=_want_audio(audio, llm, interactive),
+            report=_step,
+            confirm=_confirm_with_default if interactive else None,
         )
     except typer.Exit:
         raise

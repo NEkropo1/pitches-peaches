@@ -21,6 +21,7 @@ __all__ = [
     "TTSBackend",
     "estimate_duration",
     "install_hint",
+    "kokoro_is_only_missing_its_model",
     "normalize_for_speech",
     "select",
 ]
@@ -40,6 +41,18 @@ def select(name: str = "auto") -> TTSBackend | None:
         if candidate.available():
             return candidate
     return None
+
+
+def kokoro_is_only_missing_its_model() -> bool:
+    """Kokoro is installed and the one thing it still needs is fixable.
+
+    The condition worth acting on, kept in one place: everything heavy is
+    already on disk and a single ~12 MB wheel stands between the reader and the
+    audio they asked for.
+    """
+    if importlib.util.find_spec("kokoro") is None:
+        return False
+    return importlib.util.find_spec(G2P_MODEL) is None
 
 
 def install_hint() -> str:
