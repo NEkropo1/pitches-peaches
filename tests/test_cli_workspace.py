@@ -163,8 +163,14 @@ def test_an_unknown_cv_name_lists_the_real_ones(ws):
 # Where work lands
 # --------------------------------------------------------------------------
 
-def test_a_run_creates_the_application_before_it_needs_a_key(ws):
+def _skip_credential_check(monkeypatch):
+    """Get past the key check to test what happens after it, without a key."""
+    monkeypatch.setattr("pitches_peaches.cli._check_credential", lambda _: None)
+
+
+def test_a_run_names_the_application_from_the_posting(ws, monkeypatch):
     """The directory is claimed by string work; nothing here is a model call."""
+    _skip_credential_check(monkeypatch)
     _add_cv(ws)
     runner.invoke(app, ["run", POSTING])
 
@@ -173,14 +179,16 @@ def test_a_run_creates_the_application_before_it_needs_a_key(ws):
     assert applications[0].target == POSTING
 
 
-def test_the_same_posting_twice_resumes_rather_than_duplicating(ws):
+def test_the_same_posting_twice_resumes_rather_than_duplicating(ws, monkeypatch):
+    _skip_credential_check(monkeypatch)
     _add_cv(ws)
     runner.invoke(app, ["run", POSTING])
     runner.invoke(app, ["run", POSTING + "/"])
     assert len(ws.applications()) == 1
 
 
-def test_a_second_cv_lands_beside_the_first_under_one_application(ws):
+def test_a_second_cv_lands_beside_the_first_under_one_application(ws, monkeypatch):
+    _skip_credential_check(monkeypatch)
     _add_cv(ws, "backend-senior")
     runner.invoke(app, ["run", POSTING, "--cv", "backend-senior"])
     _add_cv(ws, "platform-lead")
@@ -223,3 +231,20 @@ def test_dash_c_never_looks_for_a_workspace(ws, tmp_path):
     assert result.exit_code == 1
     assert "peaches recon" in result.output  # the old single-directory error
     assert not (elsewhere / "by-cv").exists()
+
+
+def test_a_run_with_no_key_does_not_burn_an_application_id(ws):
+    """Ids are never reused, so one must not be spent on a run that cannot start."""
+    _add_cv(ws)
+    result = runner.invoke(app, ["run", POSTING])
+
+    assert result.exit_code == 1
+    assert "API_KEY" in result.output, "the error still names what to set"
+    assert ws.applications() == [], "nothing was created"
+    assert ws.next_id() == 1, "and no id was consumed"
+
+
+def test_the_key_error_names_the_workspace_env_file(ws):
+    _add_cv(ws)
+    result = runner.invoke(app, ["run", POSTING])
+    assert str(ws.root) in result.output

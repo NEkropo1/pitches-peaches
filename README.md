@@ -230,10 +230,15 @@ Six stages. Each one is independently runnable and resumable, writes a typed
 artifact into one run directory, and refuses to start if what it depends on is
 missing — naming the command that produces it.
 
+`peaches run` parses your CV before it researches the company. The parse is the
+cheap stage and the one most likely to fail on a file it cannot read; recon is
+around 40% of the bill. A CV that will not parse should stop the run before
+that is spent.
+
 | Stage | What it does |
 |---|---|
-| `recon` | Researches the company with web search, then writes a typed record and `01-company.md`. |
-| `profile` | Parses your CV — `.json`, `.md`, `.txt`, or `.pdf` — into structured form. |
+| `profile` | Parses your CV — `.json`, `.md`, `.txt`, or `.pdf` — into structured form. Cached per CV, so later applications reuse it. |
+| `recon` | Researches the company with web search, then writes a typed record and `01-company.md`. Shared by every CV run against this posting. |
 | `match` | Works out what your CV leaves open, asks you, then scores the role against you on four dimensions with your answers already in hand. |
 | `gate` | Recommends apply, apply-with-caveats, or don't. You decide. |
 | `playbook` | Predicts what they will ask and answers it at depth. |

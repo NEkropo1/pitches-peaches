@@ -195,6 +195,17 @@ def _workspace(workdir: Optional[Path]) -> Workspace | None:
     return Workspace.discover(Path.cwd())
 
 
+def _check_credential(config_dir: Path) -> None:
+    """Raise the usual credential error before anything permanent happens.
+
+    Deliberately reuses ``providers.resolve`` rather than a cheaper test, so
+    the reader gets the one message that already names every key, the flag for
+    each provider, and the exact ``.env`` path to create.
+    """
+    config = _cfg(config_dir)
+    providers.resolve(config.provider, model=config.model, workdir=config_dir)
+
+
 def _pick_cv(
     workspace: Workspace,
     name: Optional[str],
@@ -269,20 +280,29 @@ def _resolve_run(
         state = RunState.load_or_create(root) if create else RunState.load(root)
         return Ctx(state=state, config_dir=root)
 
+    application: Application | None = None
     if app_id is not None:
         application = workspace.application(app_id)
     elif target:
-        application = workspace.find_by_target(target)
-        if application is None:
-            application = workspace.new_application(target)
-            console.print(f"[green]new application[/green] {application.id:02d}")
+        application = workspace.find_by_target(target)  # None means a new one
     else:
         application = _most_recent(workspace)
         console.print(f"[dim]resuming application {application.id:02d}[/dim]")
 
+    # Which CV, before anything is created or any credential is examined. A
+    # missing or ambiguous CV is both likelier and more actionable than a
+    # missing key — the same order ``_llm`` already argues for.
     chosen = _pick_cv(
         workspace, cv_name, application=application, interactive=interactive
     )
+
+    if application is None:
+        # An id is claimed permanently and never handed out again, so it is not
+        # something to spend on a run that is about to stop anyway. The
+        # commonest reason it stops is the very first one: no key yet.
+        _check_credential(workspace.root)
+        application = workspace.new_application(target)
+        console.print(f"[green]new application[/green] {application.id:02d}")
     console.print(
         f"[dim]application {application.id:02d} · {application.display()} "
         f"· cv {chosen.name}[/dim]"
@@ -973,17 +993,6 @@ def run(
                 "no posting to work from. Pass the URL, or --app <id> to resume one."
             )
 
-        console.rule("[bold]recon")
-        if state.has("recon.json"):
-            # Another CV under this application already paid for it.
-            _adopt_shared_recon(state, ctx.application, ctx.cv.name)
-            recon_result = _recon_from_disk(state)
-            _step(f"reusing the research for {recon_result.company}")
-        else:
-            recon_result = recon_stage.run(
-                state, llm, target, company=company, report=_step
-            )
-
         console.rule("[bold]profile")
         if ctx.cv is not None:
             parsed, source = cv_cache.resolved(
@@ -1002,6 +1011,17 @@ def run(
             )
         for item in profile_result.inconsistencies:
             console.print(f"[yellow]decide before the call:[/yellow] {item.note}")
+
+        console.rule("[bold]recon")
+        if state.has("recon.json"):
+            # Another CV under this application already paid for it.
+            _adopt_shared_recon(state, ctx.application, ctx.cv.name)
+            recon_result = _recon_from_disk(state)
+            _step(f"reusing the research for {recon_result.company}")
+        else:
+            recon_result = recon_stage.run(
+                state, llm, target, company=company, report=_step
+            )
 
         console.rule("[bold]fit")
         match_result = match_stage.run(
