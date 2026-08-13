@@ -10,3 +10,8 @@ runs/
 .DS_Store
 .coverage
 htmlcov/
+
+# Personal CVs. Never in the repository, even by accident — `git add -A`
+# is one keystroke and this directory is where people drop their own.
+*.pdf
+!examples/**/*.pdf

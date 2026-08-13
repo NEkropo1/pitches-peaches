@@ -15,7 +15,8 @@ import json
 from typing import Callable
 
 from ..llm import LLM
-from ..models import Match, Playbook
+from ..models import Match, Playbook, Profile
+from ..profiles import compact
 from ..prompts import render
 from ..state import RunState
 
@@ -53,7 +54,9 @@ def run(
         max_questions_per_tech=llm.config.max_questions_per_tech,
         seniority=recon.get("seniority", "unknown"),
         recon=json.dumps(recon, indent=2, ensure_ascii=False),
-        profile=json.dumps(profile, indent=2, ensure_ascii=False),
+        profile=json.dumps(
+            compact(Profile.model_validate(profile)), indent=2, ensure_ascii=False
+        ),
         match=json.dumps(match, indent=2, ensure_ascii=False),
     )
 

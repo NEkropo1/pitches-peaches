@@ -31,6 +31,18 @@ to paraphrase.
 usually differ and the difference matters. Record what the CV says for each. If
 it gives only one, fill that one and leave the other null.
 
+**Record what they claim. Never compute a replacement.** If the CV says "8+
+years" and the dated roles add to four, `years_total` is still "8+ years" — it
+is their sentence about their own career and they are the authority on it.
+People leave things off deliberately: unpaid work, a first job that predates
+the CV, years they cannot prove, a gap they would rather explain in person than
+in a document. A number you derive from the dates is a different number
+measuring a different thing, and putting it in this field silently overwrites a
+decision they already made.
+
+Surface the difference under `inconsistencies` instead, so they can settle it
+themselves before anyone asks.
+
 **`timeline`** — the sequence of what they did when, if the CV gives dates.
 
 **`inconsistencies`** — this is proofreading, not suspicion.

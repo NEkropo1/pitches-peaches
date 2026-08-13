@@ -18,6 +18,7 @@ from typing import Any, Callable
 
 from ..llm import PDF, LLM, Text
 from ..models import Profile
+from ..profiles import consolidate
 from ..prompts import render
 from ..state import RunState
 
@@ -99,7 +100,9 @@ def parse_cv(
         content=blocks,
     )
     profile.extra_notes.extend(extra_notes)
-    return profile, plain
+    # A figure the model attached to two projects was attached by guesswork.
+    # Resolve that here, once, rather than in every stage that reads the result.
+    return consolidate(profile), plain
 
 
 def source_text(profile: Profile, plain: str) -> str:

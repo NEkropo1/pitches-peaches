@@ -25,6 +25,7 @@ from typing import Callable
 
 from ..llm import LLM
 from ..models import Match, MatchDraft, Probe, ProbeSet, Profile, band_for
+from ..profiles import compact
 from ..prompts import render
 from ..quotes import filter_fit_points
 from ..state import RunState
@@ -133,7 +134,7 @@ def run(
     probes: list[Probe] = []
     if interactive and ask is not None:
         report("working out what to ask you")
-        probes = _ask_what(llm, recon, profile.model_dump(mode="json"))
+        probes = _ask_what(llm, recon, compact(profile))
 
     if probes:
         report("")
@@ -163,7 +164,7 @@ def run(
     draft = _score(
         llm,
         recon,
-        profile.model_dump(mode="json"),
+        compact(profile),
         probes_collected=bool(probes),
     )
     match, warnings = _finish(

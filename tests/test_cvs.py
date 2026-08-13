@@ -160,3 +160,80 @@ def test_probe_answers_are_distinguishable_from_other_notes():
         extra_notes=["notes I pasted with --notes", ANSWER],
     )
     assert cvs.answers_in(profile) == [ANSWER]
+
+
+# --------------------------------------------------------------------------
+# How long have you been doing this
+# --------------------------------------------------------------------------
+
+DISPUTE = {
+    "lines": ["8+ years designing distributed systems", "Jan 2020 - Jan 2022"],
+    "note": "These two lines say different things — pick the one you want to lead with.",
+}
+
+
+def _disputed() -> Profile:
+    return Profile(
+        skills=[], projects=[], years_total="8+ years",
+        inconsistencies=[DISPUTE],
+    )
+
+
+def test_a_years_dispute_is_recognised():
+    assert cvs.years_dispute(_disputed()) is not None
+
+
+def test_an_unrelated_inconsistency_is_not_mistaken_for_one(cv):
+    profile = Profile(
+        skills=[], projects=[],
+        inconsistencies=[{"lines": ["Kafka", "no Kafka"], "note": "Two lines disagree about the stack."}],
+    )
+    assert cvs.years_dispute(profile) is None
+
+
+def test_whatever_they_type_is_taken_as_true(cv):
+    profile = cvs.settle_years(cv, _disputed(), ask=lambda q: "8.5")
+    assert profile.years_total == "8.5 years"
+
+
+@pytest.mark.parametrize(
+    "typed,expected",
+    [("8.5", "8.5 years"), ("1", "1 year"), ("8,5", "8.5 years"), ("20", "20 years")],
+)
+def test_a_bare_number_becomes_a_readable_figure(cv, typed, expected):
+    assert cvs.settle_years(cv, _disputed(), ask=lambda q: typed).years_total == expected
+
+
+def test_a_sentence_is_kept_exactly_as_typed(cv):
+    said = "8 commercial, longer if you count the unpaid years"
+    assert cvs.settle_years(cv, _disputed(), ask=lambda q: said).years_total == said
+
+
+def test_pressing_enter_keeps_what_the_cv_says(cv):
+    assert cvs.settle_years(cv, _disputed(), ask=lambda q: "").years_total == "8+ years"
+
+
+def test_nobody_to_ask_changes_nothing(cv):
+    assert cvs.settle_years(cv, _disputed(), ask=None).years_total == "8+ years"
+
+
+def test_it_is_asked_once_per_cv_not_once_per_application(cv):
+    cvs.settle_years(cv, _disputed(), ask=lambda q: "8.5")
+
+    def refuse(question):
+        raise AssertionError("asked again on a later application")
+
+    assert cvs.settle_years(cv, _disputed(), ask=refuse).years_total == "8.5 years"
+
+
+def test_a_settled_figure_survives_re_parsing_an_edited_cv(cv):
+    """The answer is about them, not about the file, so an edit must not lose it."""
+    cvs.settle_years(cv, _disputed(), ask=lambda q: "8.5")
+    fresh = _disputed()  # as a re-parse would return it
+    assert cvs.settle_years(cv, fresh, ask=None).years_total == "8.5 years"
+
+
+def test_settling_years_does_not_clobber_the_answer_bank(cv):
+    cvs.save_extra(cv, [ANSWER])
+    cvs.settle_years(cv, _disputed(), ask=lambda q: "8.5")
+    assert cvs.load_extra(cv) == [ANSWER]

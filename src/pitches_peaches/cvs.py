@@ -83,6 +83,100 @@ def answers_in(profile: Profile) -> list[str]:
     return [note for note in profile.extra_notes if note.strip().startswith(ANSWER_PREFIX)]
 
 
+#: Words that mark an inconsistency as being about length of career.
+_YEARS_WORDS = ("year", "experience", "seniority", "timeline", "yrs")
+
+#: Where a settled figure is stored, so a re-parse cannot lose it.
+YEARS_KEY = "years_total"
+
+
+def years_dispute(profile: Profile) -> str | None:
+    """The note about how long they have been working, if the parse raised one."""
+    for item in profile.inconsistencies:
+        haystack = " ".join([item.note, *item.lines]).lower()
+        if any(word in haystack for word in _YEARS_WORDS):
+            return item.note
+    return None
+
+
+def settle_years(
+    cv: CV,
+    profile: Profile,
+    *,
+    ask: Callable[[str], str] | None,
+    report: Reporter = lambda _: None,
+) -> Profile:
+    """Let the reader state, once, how long they have been doing this.
+
+    The parse is told to record what the CV claims and never to compute a
+    replacement, because a figure derived from dated roles measures a different
+    thing: people leave work off deliberately — unpaid, unprovable, before the
+    CV starts, or on the far side of a gap they would rather explain out loud.
+
+    So when the dates disagree with the sentence, the tool does not pick. It
+    asks the one person who knows, takes whatever they say, and remembers it
+    against the CV rather than the application — the answer is about them, and
+    it is the same answer for every job they apply to.
+    """
+    settled = _settled_years(cv)
+    if settled:
+        profile.years_total = settled
+        return profile
+
+    note = years_dispute(profile)
+    if note is None or ask is None:
+        return profile
+
+    report("")
+    report(f"  {note}")
+    if profile.years_total:
+        report(f"  Your CV says: {profile.years_total}")
+    answer = ask(
+        "How long have you been doing this? Anything you type is taken as true "
+        "— press enter to keep what the CV says"
+    ).strip()
+    if not answer:
+        return profile
+
+    profile.years_total = _as_years(answer)
+    _remember_years(cv, profile.years_total)
+    report(f"  recorded: {profile.years_total}")
+    return profile
+
+
+def _as_years(answer: str) -> str:
+    """``8.5`` becomes ``8.5 years``; anything else is kept exactly as typed."""
+    try:
+        number = float(answer.replace(",", "."))
+    except ValueError:
+        return answer
+    rendered = f"{number:g}"
+    return f"{rendered} year" if number == 1 else f"{rendered} years"
+
+
+def _settled_years(cv: CV) -> str | None:
+    path = extra_path(cv)
+    if not path.exists():
+        return None
+    try:
+        return json.loads(path.read_text(encoding="utf-8")).get(YEARS_KEY) or None
+    except json.JSONDecodeError:
+        return None
+
+
+def _remember_years(cv: CV, value: str) -> None:
+    path = extra_path(cv)
+    data = {"name": cv.name, "notes": load_extra(cv)}
+    if path.exists():
+        try:
+            data.update(json.loads(path.read_text(encoding="utf-8")))
+        except json.JSONDecodeError:
+            pass
+    data[YEARS_KEY] = value
+    cv.parsed_dir.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+
+
 def _from_cache(cv: CV) -> tuple[Profile, str]:
     cached = cv.cached() or {}
     profile = Profile.model_validate(cached["profile"])
@@ -152,7 +246,9 @@ def ensure_parsed(
     return _parse_and_cache(cv, llm, report=report, notes_path=notes_path)
 
 
-def resolved(cv: CV, llm: LLM, **kwargs) -> tuple[Profile, str]:
+def resolved(
+    cv: CV, llm: LLM, *, ask: Callable[[str], str] | None = None, **kwargs
+) -> tuple[Profile, str]:
     """``ensure_parsed``, plus the answer bank folded in.
 
     The bank is merged here rather than stored in the cached parse so that
@@ -160,6 +256,7 @@ def resolved(cv: CV, llm: LLM, **kwargs) -> tuple[Profile, str]:
     cached parse stays a faithful record of the file it came from.
     """
     profile, source = ensure_parsed(cv, llm, **kwargs)
+    profile = settle_years(cv, profile, ask=ask, report=kwargs.get("report", lambda _: None))
     extra = [note for note in load_extra(cv) if note not in profile.extra_notes]
     if extra:
         profile.extra_notes.extend(extra)

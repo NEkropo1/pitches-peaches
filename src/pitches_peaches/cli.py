@@ -998,6 +998,7 @@ def run(
             parsed, source = cv_cache.resolved(
                 ctx.cv,
                 llm,
+                ask=_ask if interactive else None,
                 confirm=_confirm_with_default if interactive else None,
                 report=_step,
                 notes_path=notes,
