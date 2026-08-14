@@ -10,6 +10,7 @@ from __future__ import annotations
 import importlib.util
 from pathlib import Path
 
+from . import encode
 from .base import BackendUnavailable, Result
 from .normalize import estimate_duration, normalize_for_speech, strip_pause_markers
 
@@ -93,6 +94,19 @@ class KokoroBackend:
         audio = np.concatenate([np.asarray(c, dtype="float32") for c in chunks])
         out.parent.mkdir(parents=True, exist_ok=True)
         sf.write(str(out), audio, SAMPLE_RATE)
+
+        # A forty-minute playbook is 113 MB of WAV, which is past what GitHub
+        # accepts and past what anyone keeps. Where the machine can compress —
+        # macOS, via tools it already has — it does. Everywhere else
+        # ``available_format`` reports aiff, ``compress`` returns the file
+        # untouched, and this is a no-op rather than a platform check.
+        try:
+            compressed = encode.compress(out, out.with_suffix(""))
+        except encode.EncodeError:
+            compressed = out  # a converter failed; the WAV is still good
+        if compressed != out:
+            out.unlink(missing_ok=True)
+            out = compressed
 
         return Result(
             path=out,

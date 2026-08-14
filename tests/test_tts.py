@@ -348,3 +348,56 @@ def test_say_does_not_ask_for_a_format_aiff_cannot_hold(monkeypatch):
         SayBackend().synthesize("Hello.", Path(tmp) / "out.wav", "Samantha", 178)
 
     assert not any("--data-format" in part for part in seen[0]), seen[0]
+
+
+# --------------------------------------------------------------------------
+# Compressing what the voice produces
+# --------------------------------------------------------------------------
+
+
+def test_the_best_available_format_is_chosen(monkeypatch):
+    from pitches_peaches.tts import encode
+
+    monkeypatch.setattr(encode.shutil, "which", lambda n: "/bin/" + n)
+    assert encode.available_format() == "mp3"
+
+    monkeypatch.setattr(encode.shutil, "which", lambda n: None if n == "lame" else "/bin/afconvert")
+    assert encode.available_format() == "m4a", "afconvert ships with macOS; no brew needed"
+
+    monkeypatch.setattr(encode.shutil, "which", lambda n: None)
+    assert encode.available_format() == "aiff"
+
+
+def test_with_no_encoder_the_file_is_returned_untouched(tmp_path, monkeypatch):
+    """On Linux this is a no-op rather than a platform check."""
+    from pitches_peaches.tts import encode
+
+    monkeypatch.setattr(encode.shutil, "which", lambda n: None)
+    src = tmp_path / "speech.wav"
+    src.write_bytes(b"RIFF")
+
+    assert encode.compress(src, tmp_path / "speech") == src
+
+
+def test_a_failing_converter_never_loses_the_audio(tmp_path, monkeypatch):
+    """Audio is the most optional thing here; a bigger file beats no file."""
+    from pitches_peaches.tts import encode
+    from pitches_peaches.tts.say import SayBackend
+
+    import subprocess as sp
+
+    def fake_run(argv, **kw):
+        # `say` writes the file; afinfo later asks about it and has no -o.
+        if "-o" in argv:
+            Path(argv[argv.index("-o") + 1]).write_bytes(b"FORM" * 32)
+        return sp.CompletedProcess(argv, 0, "", "")
+
+    monkeypatch.setattr(SayBackend, "available", lambda self: True)
+    monkeypatch.setattr("pitches_peaches.tts.say.subprocess.run", fake_run)
+    monkeypatch.setattr(
+        encode, "compress", lambda src, stem, fmt=None: (_ for _ in ()).throw(encode.EncodeError("no"))
+    )
+
+    result = SayBackend().synthesize("Hello.", tmp_path / "out.wav", "Samantha", 178)
+    assert result.path.exists()
+    assert result.path.suffix == ".aiff"

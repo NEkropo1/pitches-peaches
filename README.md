@@ -304,6 +304,13 @@ There is a quality ladder, and it is worth knowing where you are on it:
    synthetic. The **Enhanced** and **Premium** voices are a large step up and
    free: System Settings → Accessibility → Spoken Content → System Voice →
    Manage Voices. Then `--voice Ava`.
+
+Whichever speaks, the result is compressed with what macOS already has:
+`.mp3` when `lame` is installed (`brew install lame`), otherwise `.m4a` via
+`afconvert`, which ships with the OS. A forty-minute playbook is 113 MB as WAV
+and about 19 MB as speech-rate MP3. Off macOS the file stays as it was written —
+there is no platform check, just nothing available to convert with.
+
 3. **A paid TTS API** — noticeably better than either. We do not ship one,
    because it would mean a second credential, and the whole point is that
    `{LLM_PROVIDER}_API_KEY` is the only thing you have to supply.
