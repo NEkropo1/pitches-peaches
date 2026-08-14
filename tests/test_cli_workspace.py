@@ -323,3 +323,39 @@ def test_start_never_echoes_the_key_it_was_given(tmp_path, monkeypatch):
     assert env.exists()
     assert secret in env.read_text(encoding="utf-8"), "but it is stored, which is the point"
     assert oct(env.stat().st_mode)[-3:] == "600", "readable only by its owner"
+
+
+def test_start_offers_to_carry_on_rather_than_asking_for_the_posting_again(ws, monkeypatch):
+    """After a run stops part-way, re-running `start` is what a person does."""
+    _skip_credential_check(monkeypatch)
+    monkeypatch.setenv("OPENAI_API_KEY", "x")
+    _add_cv(ws)
+
+    application = ws.new_application(POSTING)
+    run_dir = application.by_cv / "backend-senior"
+    run_dir.mkdir(parents=True)
+    (run_dir / "run.json").write_text(
+        json.dumps({"stages": {"recon": {}, "profile": {}, "match": {}, "gate": {}, "playbook": {}}}),
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(app, ["start"], input="n\n1\n" + POSTING + "\n")
+    assert "is unfinished" in result.output
+    assert "playbook was the last stage to complete" in result.output
+
+
+def test_a_finished_application_is_not_offered_as_unfinished(ws, monkeypatch):
+    _skip_credential_check(monkeypatch)
+    monkeypatch.setenv("OPENAI_API_KEY", "x")
+    _add_cv(ws)
+
+    application = ws.new_application(POSTING)
+    run_dir = application.by_cv / "backend-senior"
+    run_dir.mkdir(parents=True)
+    (run_dir / "run.json").write_text(
+        json.dumps({"stages": {"recon": {}, "profile": {}, "match": {}, "gate": {}, "playbook": {}, "render": {}}}),
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(app, ["start"], input="1\n" + POSTING + "\n")
+    assert "is unfinished" not in result.output

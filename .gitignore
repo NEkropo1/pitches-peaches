@@ -15,3 +15,8 @@ htmlcov/
 # is one keystroke and this directory is where people drop their own.
 *.pdf
 !examples/**/*.pdf
+
+# A workspace created by running `peaches` inside the checkout. Personal:
+# your CV, and dossiers about jobs you are applying to.
+cvs/
+applications/

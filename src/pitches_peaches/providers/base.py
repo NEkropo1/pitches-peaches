@@ -149,8 +149,40 @@ def api_errors(provider: "Provider", model: str = ""):
     except Exception as exc:
         status = _status_of(exc)
         if status is None:
+            if _is_truncated_stream(exc):
+                raise ProviderError(_stream_message(provider, model)) from exc
             raise
         raise ProviderError(_status_message(status, provider, model, exc)) from exc
+
+
+#: A stream that stopped without its terminal event. The SDKs raise a bare
+#: ``RuntimeError`` for this, with no status code, so it slips past the status
+#: translation above and reaches the reader as a traceback — which is exactly
+#: what that translation exists to prevent, and it happens after every earlier
+#: stage has already been paid for.
+_TRUNCATED_STREAM = (
+    "response.completed",
+    "didn't receive",
+    "did not receive",
+    "incomplete chunked read",
+    "peer closed connection",
+    "connection broken",
+)
+
+
+def _is_truncated_stream(exc: Exception) -> bool:
+    text = str(exc).lower()
+    return any(marker in text for marker in _TRUNCATED_STREAM)
+
+
+def _stream_message(provider: "Provider", model: str) -> str:
+    return (
+        f"{provider.name} stopped sending before it finished this document.\n"
+        "That is a dropped connection rather than anything wrong with the run — "
+        "every stage before this one is already written to disk.\n"
+        "Run the same command again: finished stages are skipped and only what "
+        "is missing is generated."
+    )
 
 
 def _status_of(exc: Exception) -> int | None:

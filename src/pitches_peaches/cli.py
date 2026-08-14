@@ -459,6 +459,21 @@ def _resolve_run(
     )
 
 
+def _unfinished(workspace: Workspace) -> Application | None:
+    """The most recently touched application that never reached ``render``.
+
+    A run that stopped part-way leaves everything it had already produced on
+    disk, so the useful question after a crash is not "which posting" — it is
+    "carry on?".
+    """
+    candidates = [
+        app for app in workspace.applications() if _stage_reached(app) not in ("render", "declined")
+    ]
+    if not candidates:
+        return None
+    return max(candidates, key=lambda item: item.path.stat().st_mtime)
+
+
 def _most_recent(workspace: Workspace) -> Application:
     """The application touched last — and the caller always prints which.
 
@@ -1255,6 +1270,35 @@ def start(
     if chosen is None:
         _fail(WorkspaceError("no CV, so there is nothing to score. Run: peaches start"))
     console.print(f"[dim]cv: {chosen.name}[/dim]")
+
+    unfinished = _unfinished(workspace)
+    if unfinished is not None:
+        # Re-running `start` is what a person does after a run stops part-way,
+        # and asking for the posting again sends them back to the beginning of
+        # something already paid for. Offer the obvious thing first.
+        console.print()
+        console.print(
+            f"[bold]{unfinished.display()}[/bold] is unfinished — "
+            f"{_stage_reached(unfinished)} was the last stage to complete."
+        )
+        if _confirm_with_default("Carry on with that one?", True):
+            console.print()
+            run(
+                target=None,
+                cv=chosen.name,
+                application=unfinished.id,
+                workdir=None,
+                company=None,
+                notes=None,
+                non_interactive=False,
+                audio=audio,
+                force=False,
+                reparse=None,
+                model=model,
+                effort=effort,
+                provider=provider,
+            )
+            return
 
     target, existing = _ask_posting(workspace)
     if target is None:
