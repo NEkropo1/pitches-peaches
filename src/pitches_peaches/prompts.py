@@ -35,6 +35,22 @@ def _raw(name: str) -> str:
     return path.read_text(encoding="utf-8")
 
 
+def names() -> list[str]:
+    """Every prompt on disk. Derived, so a new file cannot go unnoticed."""
+    return sorted(path.stem for path in PROMPT_DIR.glob("*.md"))
+
+
+def required(name: str) -> set[str]:
+    """The placeholders a prompt needs supplied.
+
+    ``voice`` is excluded because ``render`` always injects it. Everything else
+    has to come from the call site, and the tests use this to check that it
+    does — a placeholder added to a prompt without a matching argument is a
+    failure that would otherwise surface mid-run, after money had been spent.
+    """
+    return {match.group(1) for match in _PLACEHOLDER.finditer(_raw(name))} - {"voice"}
+
+
 def render(name: str, **values: object) -> str:
     """Render a prompt, expanding ``{{voice}}`` and any supplied placeholders."""
     values = {"voice": _raw("_voice").strip(), **values}
