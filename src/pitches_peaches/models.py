@@ -132,6 +132,22 @@ class Inconsistency(BaseModel):
     )
 
 
+class Achievement(BaseModel):
+    """A figure the CV states, kept without pretending to know where it happened.
+
+    Produced by ``profiles.consolidate`` when the same number was attributed to
+    more than one project — which means the attribution was guessed. The figure
+    is true and worth leading with; the project it is bolted to may not be, and
+    the reader is the one who would have to defend it.
+    """
+
+    figure: str
+    claimed_under: list[str] = Field(
+        default_factory=list,
+        description="The projects this figure was attributed to. More than one means unresolved.",
+    )
+
+
 class ContactDetail(BaseModel):
     """One way to reach the candidate.
 
@@ -156,6 +172,10 @@ class Profile(BaseModel):
     skills: list[Skill]
     projects: list[ProjectEntry]
     timeline: list[TimelineEntry] = Field(default_factory=list)
+    achievements: list[Achievement] = Field(
+        default_factory=list,
+        description="Figures whose project attribution could not be trusted. Filled in after parsing, not by the model.",
+    )
     inconsistencies: list[Inconsistency] = Field(default_factory=list)
     extra_notes: list[str] = Field(
         default_factory=list,
@@ -204,6 +224,19 @@ class Probe(BaseModel):
     about: str | None = Field(
         default=None, description="The requirement or CV line that prompted it."
     )
+
+
+class ProbeSet(BaseModel):
+    """Stage 3a — what to ask, decided before anything has been scored.
+
+    Its own call, and a deliberately small one. Asking "what is missing here"
+    needs the posting and the CV; it does not need a finished match card. The
+    pipeline used to get these by scoring in full, showing a draft, and then
+    scoring again from scratch — which paid for one of the longest generations
+    in the run twice and threw the first one away.
+    """
+
+    probes: list[Probe] = Field(default_factory=list)
 
 
 class Match(BaseModel):

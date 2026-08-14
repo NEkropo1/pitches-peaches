@@ -18,6 +18,7 @@ from typing import Any, Callable
 
 from ..llm import PDF, LLM, Text
 from ..models import Profile
+from ..profiles import consolidate
 from ..prompts import render
 from ..state import RunState
 
@@ -56,14 +57,23 @@ def _cv_content(path: Path) -> tuple[list[Any], str]:
     return [Text(raw)], raw
 
 
-def run(
-    state: RunState,
+def parse_cv(
     llm: LLM,
-    cv_path: str,
+    cv_path: str | Path,
     *,
     notes_path: str | None = None,
     report: Reporter = lambda _: None,
-) -> Profile:
+) -> tuple[Profile, str]:
+    """The paid half: one model call, returning the profile and its source text.
+
+    Split out from ``run`` because a CV is parsed once and read by every
+    application that uses it. This function knows nothing about where the
+    result is stored, which is what lets the same call serve a single run
+    directory and a workspace-wide CV cache.
+
+    The second element is the text quote verification runs against. For a PDF
+    we have none, so the caller substitutes the extracted profile — see ``run``.
+    """
     path = Path(cv_path).expanduser()
     if not path.exists():
         raise FileNotFoundError(f"no CV at {path}")
@@ -90,21 +100,49 @@ def run(
         content=blocks,
     )
     profile.extra_notes.extend(extra_notes)
+    # A figure the model attached to two projects was attached by guesswork.
+    # Resolve that here, once, rather than in every stage that reads the result.
+    return consolidate(profile), plain
 
-    state.write_json("profile.json", profile)
-    # The quote-verification source. For a PDF the extracted profile is the only
-    # text we have; that is the honest source to check quotes against.
-    state.write_text(
-        "cv-source.txt",
-        plain.strip()
-        or json.dumps(profile.model_dump(mode="json"), indent=2, ensure_ascii=False),
+
+def source_text(profile: Profile, plain: str) -> str:
+    """What quote verification checks against.
+
+    For a PDF the extracted profile is the only text we have; that is the
+    honest source to check quotes against, and pretending otherwise would let
+    a quote pass because nothing could contradict it.
+    """
+    return plain.strip() or json.dumps(
+        profile.model_dump(mode="json"), indent=2, ensure_ascii=False
     )
 
+
+def write(state: RunState, profile: Profile, source: str, cv_path: str | Path) -> None:
+    """Put an already-parsed CV into a run directory.
+
+    Separate from ``parse_cv`` so a cached parse lands identically to a fresh
+    one: every downstream stage reads ``profile.json`` from the run directory
+    and never needs to know which of the two it got.
+    """
+    state.write_json("profile.json", profile)
+    state.write_text("cv-source.txt", source)
     state.record(
         "profile",
-        cv=str(path),
+        cv=str(cv_path),
         skills=len(profile.skills),
         projects=len(profile.projects),
         inconsistencies=len(profile.inconsistencies),
     )
+
+
+def run(
+    state: RunState,
+    llm: LLM,
+    cv_path: str,
+    *,
+    notes_path: str | None = None,
+    report: Reporter = lambda _: None,
+) -> Profile:
+    profile, plain = parse_cv(llm, cv_path, notes_path=notes_path, report=report)
+    write(state, profile, source_text(profile, plain), cv_path)
     return profile

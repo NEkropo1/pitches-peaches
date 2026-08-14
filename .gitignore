@@ -10,3 +10,16 @@ runs/
 .DS_Store
 .coverage
 htmlcov/
+
+# Personal CVs. Never in the repository, even by accident — `git add -A`
+# is one keystroke and this directory is where people drop their own.
+*.pdf
+!examples/**/*.pdf
+
+# A workspace created by running `peaches` inside the checkout. Personal:
+# your CV, and dossiers about jobs you are applying to.
+cvs/
+applications/
+# ...and the config that `peaches init` drops beside them. The repo has no use
+# for one; a workspace does.
+/peaches.toml

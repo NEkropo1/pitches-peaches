@@ -61,9 +61,94 @@ this actually works, not just that it did not crash:
   the re-score, and the gate prompt are all exercised. `METRICS.md` measures
   that run.
 
+  **The match stage has since been restructured** and that specific shape no
+  longer exists: the questions now come from their own small call before
+  anything is scored, and the card is generated once with the answers already
+  in it. The new shape is covered by `tests/test_match.py` — including the
+  regression that put it there — but **the probe call has never made a live
+  request**, on any provider. It is the newest unexecuted thing in the project.
+  `pytest --e2e --provider openai` closes it.
+
+## 2b. What the first workspace run broke
+
+The run that verified the workspace also killed itself at the last stage, and
+the failure is worth recording because no offline test could have found it.
+
+**Audio ended the process at exit 1 after every model call had been paid for.**
+Kokoro's grapheme-to-phoneme layer fetches a spaCy model on first use. spaCy's
+downloader picks `sys.executable -m pip` whenever *any* `pip` is on `PATH` — and
+inside a uv-created virtualenv there is no `pip` module, so the command fails
+and the downloader calls `sys.exit()`. `SystemExit` is not an `Exception`, so it
+went through every handler in this project untouched.
+
+Three things were wrong, not one:
+
+1. **Nothing caught it.** Synthesis now catches `BaseException` and re-raises
+   only `KeyboardInterrupt`. Audio is the last and most optional thing a run
+   does; everything expensive is already on disk by the time it starts, so a
+   voice that will not synthesize is a note, never the end of the run.
+2. **`available()` was answering the wrong question.** It checked that kokoro
+   imports, not that synthesis works. It now checks the spaCy model too, so
+   `auto` falls back to `say` rather than choosing a backend that will explode.
+3. **The first fix printed a command that does not work.** `uv pip install
+   en_core_web_sm` fails — spaCy models are not on PyPI. The hint is now the
+   release wheel URL, which was run before being written down.
+
+This is the second time measuring something has been worth more than reading
+it, and the pattern is the same as the cost estimate in `METRICS.md`: the code
+looked right, and had never been watched.
+
+## 2c. Known cost leak: narration is per-CV
+
+`scripts/*.txt` are written into the per-CV run directory, so a second CV
+against the same posting re-narrates `01-company.md` — one model call for a
+document that is byte-for-byte the one the first CV already paid to narrate.
+The company narration depends on the posting, exactly like the document it
+reads from, so it belongs beside `01-company.md` at the application level.
+
+Not fixed here because `SHARED_ARTIFACTS` is a flat set of filenames and these
+are nested paths, which is a change to how sharing is expressed rather than a
+change to what is shared. It is the same mistake as re-running recon, one layer
+down, and it should be fixed before anyone runs many CVs against one posting
+with audio on.
+
+## 2d. What the second CV proved, and what it broke on the way
+
+A second CV was run against the posting the first had already researched. It
+reused the research: **zero web searches**, `recon.json` read from the
+application level, and the second run's `run.json` records that stage as
+`shared` rather than pretending it performed it. The two cards then disagreed —
+84/100 and *apply with caveats* for the backend CV, 76/100 and *do not apply*
+for a platform-shaped one with the static-analysis work removed — which is the
+other half of the claim: the saving is in the research, not in the thinking.
+
+Getting there took two attempts, and the first one is the finding.
+
+**`peaches run posting.txt` did not match a stored `/abs/path/posting.txt`.**
+`_normalise_target` expanded `~` but never resolved to an absolute path, so the
+same file named from a different directory read as a different posting. A second
+application was created and the company was researched from scratch — three
+requests and twenty-odd searches, spent to rediscover what was already on disk
+one directory away.
+
+It is worth naming what kind of mistake that is. Every expensive piece of this
+layout hangs off one predicate: *is this the same posting?* That predicate had
+no test for the commonest way a person refers to a file, and the offline suite
+passed throughout, because every test in it used one spelling. Nothing is
+verified by a test that only asks the question the way the author happened to
+ask it.
+
 ## 3. What is still unexecuted
 
 Everything below has never made or handled a real API response.
+
+- **A complete run on a PDF CV.** The parse itself is proven: a real PDF became
+  a full profile — 74 skills, 7 projects, contacts typed, and a genuine
+  inconsistency surfaced. Nothing has run *past* that on a PDF, and the
+  difference is not cosmetic: with no source text, `cv-source.txt` becomes the
+  extracted profile, so quote verification checks the model's output against
+  the model's own earlier output. That substrate has never been watched
+  rejecting anything. What the same parse got wrong is in §2d.
 
 - **`llm.py` against Anthropic and Gemini.** All three call shapes are proven
   on OpenAI. Against the other two, in particular:

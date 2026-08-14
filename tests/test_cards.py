@@ -116,3 +116,25 @@ def test_markdown_has_one_h1_and_the_expected_sections(match):
     assert len(re.findall(r"^# ", text, re.M)) == 1
     for heading in ("Why you fit", "Gaps", "What to prepare"):
         assert heading in text
+
+
+def test_diagrams_are_not_redrawn_when_they_already_exist(tmp_path):
+    """Re-running render to finish an interrupted one must not re-pay for mermaid."""
+    from pitches_peaches.stages import render
+    from pitches_peaches.state import RunState
+
+    class _LLM:
+        calls = 0
+
+        def parse(self, *a, **kw):
+            type(self).calls += 1
+            raise AssertionError("drew diagrams that were already on disk")
+
+    state = RunState.load_or_create(tmp_path)
+    state.write_text("04-diagrams.md", "# Diagrams\n")
+
+    said: list[str] = []
+    render._write_diagrams(state, _LLM(), {}, None, said.append)
+
+    assert _LLM.calls == 0
+    assert "reusing" in said[0]

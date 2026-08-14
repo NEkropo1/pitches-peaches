@@ -496,3 +496,37 @@ def test_provider_errors_pass_through_untranslated(tmp_path, monkeypatch):
     llm = _llm_over("openai", tmp_path, monkeypatch, ProviderError("already clear"))
     with pytest.raises(ProviderError, match="already clear"):
         llm.write(system="s", content="c")
+
+
+def test_a_stream_that_stops_early_is_not_a_traceback():
+    """The SDK raises a bare RuntimeError with no status, so it slipped past.
+
+    It surfaced as a forty-line traceback at the last stage of a run whose
+    every earlier stage had already been paid for.
+    """
+    from pitches_peaches.providers.base import ProviderError, api_errors
+
+    class _P:
+        name = "openai"
+        env_key = "OPENAI_API_KEY"
+
+    with pytest.raises(ProviderError) as err:
+        with api_errors(_P(), "gpt-5.4-mini"):
+            raise RuntimeError("Didn't receive a `response.completed` event.")
+
+    message = str(err.value)
+    assert "already written to disk" in message
+    assert "again" in message, "and it must name what to do about it"
+
+
+def test_an_unrelated_runtime_error_still_propagates():
+    """Only a truncated stream is translated; a real bug must stay a real bug."""
+    from pitches_peaches.providers.base import api_errors
+
+    class _P:
+        name = "openai"
+        env_key = "OPENAI_API_KEY"
+
+    with pytest.raises(RuntimeError, match="something else entirely"):
+        with api_errors(_P(), "gpt-5.4-mini"):
+            raise RuntimeError("something else entirely")

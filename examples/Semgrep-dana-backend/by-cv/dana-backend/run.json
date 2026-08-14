@@ -1,0 +1,80 @@
+{
+  "created": "2026-08-13T11:45:28+00:00",
+  "stages": {
+    "recon": {
+      "at": "2026-08-13T11:50:21+00:00",
+      "target": "tests/fixtures/posting.txt",
+      "url": null,
+      "company": "Semgrep",
+      "claims": 11,
+      "requirements": 8,
+      "sources": [
+        "https://semgrep.dev/about/?utm_source=openai",
+        "https://semgrep.dev/blog/2020/introducing-semgrep-and-r2c/?utm_source=openai",
+        "https://semgrep.dev/blog/2021/r2c-series-b-funding/?utm_source=openai",
+        "https://semgrep.dev/blog/2023/series-c/?utm_source=openai",
+        "https://semgrep.dev/blog/2025/series-d-announcement/?utm_source=openai",
+        "https://semgrep.dev/products/semgrep-appsec-platform/?utm_source=openai",
+        "https://semgrep.dev/products/semgrep-code/?utm_source=openai",
+        "https://semgrep.dev/pricing/?utm_source=openai",
+        "https://news.mit.edu/2022/r2c-software-security-0210?utm_source=openai",
+        "https://semgrep.dev/blog/2026/mythos-bad-takes-facts-and-fear/?utm_source=openai",
+        "https://get.semgrep.dev/founder-keynote.html?utm_source=openai",
+        "https://semgrep.dev/events/skynet-or-wall-e-how-ai-is-changing-work-for-security-teams?utm_source=openai",
+        "https://wellfound.com/company/r2cdev/people?utm_source=openai",
+        "https://semgrep.dev/blog/2026/the-ai-hackathon-effect/?utm_source=openai",
+        "https://semgrep.dev/blog/2024/help-us-rename-semgrep-oss/?utm_source=openai",
+        "https://semgrep.dev/blog/2022/r2c-internship-vivek?utm_source=openai",
+        "https://semgrep.dev/blog/2024/the-tech-behind-semgrep-assistant/?utm_source=openai",
+        "https://jobs.ashbyhq.com/semgrep/f6382e7f-42be-4186-beed-510f684a2466?utm_source=openai",
+        "https://jobs.ashbyhq.com/semgrep/0698a3be-c9be-46cb-9172-fe67ff801312/?utm_source=openai",
+        "https://semgrep.dev/blog/2023/internship-charissa?utm_source=openai",
+        "https://docs.github.com/en/code-security/concepts/code-scanning/autofix-for-code-scanning?utm_source=openai",
+        "https://docs.snyk.io/scan-with-snyk/snyk-code/manage-code-vulnerabilities/fix-code-vulnerabilities-automatically?utm_source=openai",
+        "https://semgrep.dev/blog/2025/why-ai-powered-memories-are-the-future-of-semgrep-sast/?utm_source=openai",
+        "https://github.com/security/advanced-security/code-security?locale=en-US&utm_source=openai",
+        "https://semgrep.dev/blog/2025/appsec-for-builders-a-manifesto-for-the-future-of-secure-code-development/?utm_source=openai"
+      ]
+    },
+    "profile": {
+      "at": "2026-08-13T11:51:02+00:00",
+      "cv": "tests/fixtures/cv.json",
+      "skills": 43,
+      "projects": 3,
+      "inconsistencies": 1
+    },
+    "match": {
+      "at": "2026-08-13T11:52:05+00:00",
+      "overall": 84,
+      "band": "strong",
+      "provisional": false,
+      "probes_asked": 5,
+      "probes_answered": 5,
+      "quotes_dropped": 0
+    },
+    "gate": {
+      "at": "2026-08-13T11:52:11+00:00",
+      "recommendation": "apply_with_caveats",
+      "decision": "proceed"
+    },
+    "playbook": {
+      "at": "2026-08-13T11:53:41+00:00",
+      "branch": "structured",
+      "technologies": [
+        "Python",
+        "PostgreSQL",
+        "Distributed systems"
+      ],
+      "questions": 9
+    },
+    "render": {
+      "at": "2026-08-13T12:15:40+00:00",
+      "audio": true
+    }
+  },
+  "decision": {
+    "decision": "proceed",
+    "recommendation": "apply_with_caveats",
+    "at": "2026-08-13T11:52:11+00:00"
+  }
+}

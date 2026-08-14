@@ -8,11 +8,14 @@ artifact is missing, and names the command that produces it.
 from __future__ import annotations
 
 import json
+import os
 import re
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+
+from .workspace import SHARED_ARTIFACTS
 
 STATE_FILE = "run.json"
 
@@ -98,22 +101,28 @@ class RunState:
 
     workdir: Path
     data: dict[str, Any] = field(default_factory=dict)
+    #: Where posting-scoped artifacts live when several CVs share one posting.
+    #: ``None`` — the default, and what ``-C`` gives you — puts everything in
+    #: ``workdir``, which is the original single-directory run.
+    shared: Path | None = None
 
     # -- lifecycle ---------------------------------------------------------
 
     @classmethod
-    def load(cls, workdir: Path) -> RunState:
+    def load(cls, workdir: Path, *, shared: Path | None = None) -> RunState:
         path = Path(workdir) / STATE_FILE
         if not path.exists():
             raise StageError(f"no {STATE_FILE} in {workdir}.\nRun: peaches init")
-        return cls(Path(workdir), json.loads(path.read_text(encoding="utf-8")))
+        return cls(
+            Path(workdir), json.loads(path.read_text(encoding="utf-8")), shared=shared
+        )
 
     @classmethod
-    def load_or_create(cls, workdir: Path) -> RunState:
+    def load_or_create(cls, workdir: Path, *, shared: Path | None = None) -> RunState:
         workdir = Path(workdir)
         if (workdir / STATE_FILE).exists():
-            return cls.load(workdir)
-        state = cls(workdir, {"created": _now(), "stages": {}})
+            return cls.load(workdir, shared=shared)
+        state = cls(workdir, {"created": _now(), "stages": {}}, shared=shared)
         state.save()
         return state
 
@@ -137,13 +146,51 @@ class RunState:
     def ran(self, stage: str) -> bool:
         return stage in self.stages
 
+    def adopt(self, stage: str, record: dict[str, Any]) -> None:
+        """Record a stage whose artifacts this run shares but did not produce.
+
+        A second CV against the same posting reads the recon another run paid
+        for. Without this, its ``run.json`` would describe a run that never
+        researched anything, which is exactly the kind of quiet inaccuracy this
+        file exists to prevent.
+        """
+        self.stages[stage] = {**record, "shared": True}
+        self.save()
+
     # -- artifacts ---------------------------------------------------------
 
     def artifact_path(self, name: str) -> Path:
+        """Where an artifact lives — which is not always this run's directory.
+
+        ``recon.json`` and the company dossier depend on the posting and not on
+        the CV, so when a workspace is running several CVs against one posting
+        they resolve one level up and are written exactly once. Recon is three
+        model requests and around twenty web searches; re-running it because
+        the reader wanted to try a second CV is the most expensive mistake this
+        layout can make.
+
+        Every other accessor goes through here, so ``has``, ``require``,
+        ``read_json`` and both writers inherit this without knowing about it.
+        """
+        if self.shared is not None and name in SHARED_ARTIFACTS:
+            return self.shared / name
         return self.workdir / name
 
     def has(self, name: str) -> bool:
         return self.artifact_path(name).exists()
+
+    def link_to(self, name: str) -> str:
+        """How to reach an artifact from inside this run directory.
+
+        Usually just the name. For the posting-scoped artifacts under a
+        workspace it is ``../../01-company.md``, because one copy is shared by
+        every CV — and a dossier index that links to a sibling which is two
+        levels up is a broken link in the first thing the reader opens.
+        """
+        target = self.artifact_path(name)
+        if target.parent == self.workdir:
+            return name
+        return os.path.relpath(target, self.workdir).replace(os.sep, "/")
 
     def require(self, *names: str) -> None:
         """Refuse to continue unless every named artifact is on disk."""

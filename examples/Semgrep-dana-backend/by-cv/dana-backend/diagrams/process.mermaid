@@ -1,0 +1,16 @@
+flowchart TD
+A["Recruiter screen"] -->|"fit for hybrid role, motivation, comp, location"| B{"Location and level fit?"}
+B -->|"yes"| C["Hiring manager call"]
+B -->|"no"| X["No hire / hold"]
+C -->|"scope, ownership, backend judgment, product motivation"| D{"Signals enough backend depth and ownership?"}
+D -->|"yes"| E["Technical screen or live coding"]
+D -->|"no"| X
+E -->|"correctness, edge cases, production-shaped code"| F{"Pass coding bar?"}
+F -->|"yes"| G["System design interview"]
+F -->|"no"| X
+G -->|"scaling, data model, reliability, tenant isolation"| H{"Good architecture tradeoffs?"}
+H -->|"yes"| I["Final loop / panel"]
+H -->|"no"| X
+I -->|"founders and leaders assess product judgment, speed, collaboration"| J{"Strong culture and role fit?"}
+J -->|"yes"| K["Offer"]
+J -->|"no"| X

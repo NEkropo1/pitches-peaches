@@ -13,30 +13,56 @@ constraint is the product.
 ```bash
 uv tool install pitches-peaches
 export ANTHROPIC_API_KEY=...     # or OPENAI_API_KEY, or GEMINI_API_KEY
-peaches run https://the-job-posting --cv ~/cv.pdf -C runs/acme
+
+peaches init                     # a workspace here
+peaches cv add ~/cv.pdf          # free; parsing happens on first use
+peaches run https://the-job-posting
 ```
 
 It is provider-agnostic: set whichever key you have and it uses that one.
 It needs **Python 3.14+** — `uv tool install` fetches a suitable interpreter
 for you, so this matters only if you install it some other way.
 
-> ### ⚠️ v0.1.1: what has actually been run
+> ### ⚠️ v0.1.2: what has actually been run
 >
 > Verified end to end on **OpenAI only**, with **`gpt-5.4-mini`** — both
 > non-interactive and with the probe loop and gate answered by hand, using a
-> JSON CV.
+> JSON CV, inside a workspace, with the CV parsed into the shared cache, and
+> with narration synthesized to `.wav` by kokoro. A second CV was then run
+> against the same posting and reused the research: zero web searches, and
+> `run.json` records that stage as shared rather than performed.
 >
 > Everything else is covered by the offline test suite but has **never made a
 > live API call**:
 >
 > - the **Anthropic and Gemini providers**
 > - any model other than `gpt-5.4-mini`
-> - **PDF CVs** (every live run so far used a JSON CV)
-> - **audio** rendering, and both TTS backends
+> - **a complete run on a PDF CV** — the parse is proven, but every run that
+>   went past it used a JSON CV, and quote verification has a different
+>   substrate for a PDF: the extracted profile, since there is no source text
+> - the **macOS `say` backend**
 >
-> Treat those as unproven rather than broken — the code may well work, it just
-> has not been watched working. The CLI says so at runtime when you are on an
-> unverified combination, and `peaches version` prints both lists.
+> **Audio needs one more install than the extra can express**, and the run
+> offers to do it for you rather than leaving it to this paragraph. Kokoro
+> fetches a pronunciation model on first use with a downloader that shells out
+> to `pip`, which a uv-created virtualenv does not have — so
+> `uv tool install "pitches-peaches[audio]"` is not enough on its own. When you
+> ask for audio and only that model is missing, you are asked once:
+>
+> ```
+> Kokoro needs the en_core_web_sm pronunciation model, which its own
+> installer cannot fetch inside a uv environment. It is a ~12 MB download:
+>   uv pip install --python … en_core_web_sm-3.8.0-py3-none-any.whl
+> Install en_core_web_sm now? [Y/n]:
+> ```
+>
+> Say no, or run non-interactively, and nothing is installed: `peaches` reports
+> kokoro unavailable, falls back to macOS voices where it can, and leaves the
+> narration scripts on disk either way. A backend that fails cannot end a run.
+>
+> Treat the rest as unproven rather than broken — the code may well work, it
+> just has not been watched working. The CLI says so at runtime when you are on
+> an unverified combination, and `peaches version` prints both lists.
 > [DEBRIEF.md](DEBRIEF.md) has the precise state of each, and
 > [METRICS.md](METRICS.md) has what a verified run actually cost and produced.
 
@@ -44,6 +70,10 @@ No uv? `curl -LsSf https://raw.githubusercontent.com/NEkropo1/pitches-peaches/ma
 (or `install.ps1` on Windows) installs uv and then the tool.
 
 ## What comes out
+
+**[A complete run is checked in.](examples/Semgrep-dana-backend/)** Real output
+against the fixture posting and CV — the dossier, the card, the diagrams, and
+one narration `.wav`. Read that before installing anything.
 
 A directory of files. `00-README.md` indexes them, `fit.html` is the card, and
 the numbered documents are the dossier:
@@ -145,17 +175,73 @@ WHAT TO PREPARE
 Every quote is verbatim from the CV. Any the model could not find there was
 dropped before the card was rendered.
 
+## Several applications, several CVs
+
+A job search is not one run. `peaches init` makes a workspace, and everything
+after that is organised for you:
+
+```
+├── cvs/
+│   ├── backend-senior.pdf          yours, never touched
+│   ├── platform-lead.md
+│   └── .parsed/                    derived; delete it and it rebuilds
+└── applications/
+    ├── 01-semgrep/
+    │   ├── recon.json              shared by every CV below
+    │   ├── 01-company.md
+    │   └── by-cv/
+    │       ├── backend-senior/     the dossier, as shown above
+    │       └── platform-lead/
+    └── 02-acme/
+```
+
+```bash
+peaches ls                          # the board: what exists and how far it got
+peaches resume 1                    # continue where you left off
+peaches run <posting> --cv platform-lead    # a second CV, same posting
+```
+
+**Recon sits above the CV split, and that is the point.** Researching the
+company is three model requests and around twenty web searches — roughly 40% of
+a run — and it does not depend on your CV at all. Trying a second CV against a
+posting you have already researched reuses it and costs nothing extra.
+
+**Your CV is parsed once.** The cache stores the SHA-256 of the file it read,
+so an edited CV is noticed rather than silently scored against a version you
+have since rewritten. Nothing is parsed without asking first, because that is a
+model call and it is your money — and a run that finds a changed CV with nobody
+there to ask refuses and names the command rather than guessing.
+
+**What you type into the probe loop can be kept.** Those answers are CV
+material you never wrote down. Say yes when asked and they follow that CV into
+every future application, so each one asks fewer questions and produces a card
+with more evidence behind it.
+
+Handles like `01-semgrep` are computed from the URL by string work alone — no
+model call, and no waiting for one. The company and role shown by `peaches ls`
+are read back out of `recon.json` once it exists. Ids are never reused: delete
+`02` and the next application is `03`, so a path you saved somewhere never
+quietly comes to mean a different job.
+
+`-C <dir>` is unchanged and bypasses all of this, putting one run in one
+directory exactly as before.
+
 ## How it works
 
 Six stages. Each one is independently runnable and resumable, writes a typed
 artifact into one run directory, and refuses to start if what it depends on is
 missing — naming the command that produces it.
 
+`peaches run` parses your CV before it researches the company. The parse is the
+cheap stage and the one most likely to fail on a file it cannot read; recon is
+around 40% of the bill. A CV that will not parse should stop the run before
+that is spent.
+
 | Stage | What it does |
 |---|---|
-| `recon` | Researches the company with web search, then writes a typed record and `01-company.md`. |
-| `profile` | Parses your CV — `.json`, `.md`, `.txt`, or `.pdf` — into structured form. |
-| `match` | Scores the role against you on four dimensions, then asks you follow-up questions and re-scores. |
+| `profile` | Parses your CV — `.json`, `.md`, `.txt`, or `.pdf` — into structured form. Cached per CV, so later applications reuse it. |
+| `recon` | Researches the company with web search, then writes a typed record and `01-company.md`. Shared by every CV run against this posting. |
+| `match` | Works out what your CV leaves open, asks you, then scores the role against you on four dimensions with your answers already in hand. |
 | `gate` | Recommends apply, apply-with-caveats, or don't. You decide. |
 | `playbook` | Predicts what they will ask and answers it at depth. |
 | `render` | Diagrams, the index, `fit.html`, and optionally narration audio. |
@@ -194,8 +280,12 @@ read the answers and decide what you know.
 it is worth listening to:
 
 ```
-Narration is written for the ear and synthesized with kokoro. It costs one more
-model call per document and a few minutes.
+Narrated: 01-company, 03-playbook. Not the fit card — it is a table, and a table
+read aloud is worse than useless.
+Each is rewritten for the ear first — acronyms expanded, tables and links
+removed, pauses marked. That is 2 model calls, and the scripts are kept and reused.
+Turning those scripts into audio is free and local, with kokoro. It takes a few
+minutes per document.
 Render narration audio? [y/N]:
 ```
 
@@ -214,6 +304,13 @@ There is a quality ladder, and it is worth knowing where you are on it:
    synthetic. The **Enhanced** and **Premium** voices are a large step up and
    free: System Settings → Accessibility → Spoken Content → System Voice →
    Manage Voices. Then `--voice Ava`.
+
+Whichever speaks, the result is compressed with what macOS already has:
+`.mp3` when `lame` is installed (`brew install lame`), otherwise `.m4a` via
+`afconvert`, which ships with the OS. A forty-minute playbook is 113 MB as WAV
+and about 19 MB as speech-rate MP3. Off macOS the file stays as it was written —
+there is no platform check, just nothing available to convert with.
+
 3. **A paid TTS API** — noticeably better than either. We do not ship one,
    because it would mean a second credential, and the whole point is that
    `{LLM_PROVIDER}_API_KEY` is the only thing you have to supply.

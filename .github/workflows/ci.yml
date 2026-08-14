@@ -56,10 +56,18 @@ jobs:
           uv pip install --python /tmp/fresh dist/*.whl
           /tmp/fresh/bin/peaches version
           # Prompts are package data; a wheel missing them fails only at runtime.
+          # Every prompt is rendered with whatever it declares it needs, rather
+          # than one prompt with arguments written out here — that hardcoding
+          # broke this step the first time a prompt gained a placeholder, which
+          # is a check failing for a reason that has nothing to do with wheels.
           /tmp/fresh/bin/python -c "
-          from pitches_peaches.prompts import render
-          assert 'self-reported' in render('match', recon='{}', profile='{}')
-          print('prompts load from the installed wheel')
+          from pitches_peaches.prompts import names, render, required
+          shipped = names()
+          assert {'match', 'probes', 'recon_research', 'narration'} <= set(shipped), shipped
+          for name in shipped:
+              render(name, **{key: 'x' for key in required(name)})
+          assert 'self-reported' in render('match', **{k: 'x' for k in required('match')})
+          print(f'{len(shipped)} prompts load from the installed wheel')
           "
 
       # A sdist that cannot run its own suite is missing files. MANIFEST.in

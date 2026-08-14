@@ -6,4 +6,6 @@ prune tests/__pycache__
 # with it.
 include METRICS.md DEBRIEF.md .env.sample
 graft skill
+# examples/ is deliberately not grafted: it carries a .wav, and nobody
+# installing the tool needs a copy of one run's output in their site-packages.
 global-exclude *.py[cod] .DS_Store

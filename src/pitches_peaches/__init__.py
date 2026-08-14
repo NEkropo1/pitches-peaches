@@ -6,7 +6,7 @@ touches a job board account. That constraint is a product feature.
 
 #: The single source of truth for the version. pyproject.toml reads this
 #: attribute, so there is nowhere for the two to disagree.
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 
 # ---------------------------------------------------------------------------
 # What has actually been run against a live API.
@@ -30,14 +30,18 @@ VERIFIED_PATHS = (
     "the full six-stage pipeline, non-interactive",
     "the interactive probe loop and gate prompt",
     "JSON CVs",
+    "the workspace: one application, one CV, with the CV parsed into the cache",
+    "narration scripts, and audio synthesized with kokoro",
+    "a second CV against one posting, reusing the shared recon",
+    "parsing a PDF CV into a profile",
 )
 
 #: Paths that remain unproven even on the verified provider/model.
 UNVERIFIED_PATHS = (
     "the Anthropic and Gemini providers",
     "any model other than " + VERIFIED_MODEL,
-    "PDF CVs (every live run so far used a JSON CV)",
-    "audio rendering, and both TTS backends",
+    "a complete run on a PDF CV (only the parse has been watched)",
+    "the macOS say backend",
 )
 
 

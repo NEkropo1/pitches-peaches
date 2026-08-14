@@ -1,7 +1,11 @@
 """TTS text normalization — the part that decides whether the audio is listenable."""
 
+from pathlib import Path
+
 import pytest
 
+from pitches_peaches.config import Config
+from pitches_peaches.state import RunState
 from pitches_peaches.tts import select
 from pitches_peaches.tts.normalize import (
     estimate_duration,
@@ -96,3 +100,304 @@ def test_backend_none_disables_audio():
 def test_unavailable_named_backend_returns_none_rather_than_raising():
     # kokoro is an optional extra; on a machine without it this must not throw.
     assert select("kokoro") is None or select("kokoro").name == "kokoro"
+
+
+# --------------------------------------------------------------------------
+# A backend that fails must never end the run
+# --------------------------------------------------------------------------
+
+
+class _Exploding:
+    """A backend that calls sys.exit() from inside synthesize().
+
+    Not hypothetical. Kokoro's grapheme-to-phoneme layer downloads a spaCy
+    model on first use, and spaCy's downloader calls sys.exit() when the
+    install command fails — which it does inside a uv-created virtualenv,
+    because there is no pip module there. This killed a complete run at the
+    very last stage, after every model call had been paid for.
+    """
+
+    name = "exploding"
+
+    def available(self) -> bool:
+        return True
+
+    def synthesize(self, text, out, voice, rate):
+        raise SystemExit(1)
+
+
+def test_a_backend_that_exits_does_not_take_the_run_with_it(tmp_path, monkeypatch):
+    from pitches_peaches import tts as tts_module
+    from pitches_peaches.stages import render
+
+    monkeypatch.setattr(tts_module, "select", lambda name: _Exploding())
+
+    state = RunState.load_or_create(tmp_path)
+    state.write_text("scripts/01-company.txt", "A narration script.")
+    lines: list[str] = []
+
+    render._synthesize(state, Config(), [("01-company", "A narration script.")], lines.append)
+
+    joined = "\n".join(lines)
+    assert "could not synthesize 01-company" in joined
+    assert "scripts/01-company.txt" in joined, "the script must still be pointed at"
+    assert not (tmp_path / "scripts" / "01-company.wav").exists()
+
+
+def test_a_keyboard_interrupt_still_stops_everything(tmp_path, monkeypatch):
+    """Degrading is for failures, not for the reader asking it to stop."""
+    from pitches_peaches import tts as tts_module
+    from pitches_peaches.stages import render
+
+    class _Interrupted(_Exploding):
+        def synthesize(self, text, out, voice, rate):
+            raise KeyboardInterrupt
+
+    monkeypatch.setattr(tts_module, "select", lambda name: _Interrupted())
+    state = RunState.load_or_create(tmp_path)
+
+    with pytest.raises(KeyboardInterrupt):
+        render._synthesize(state, Config(), [("01-company", "x")], lambda _: None)
+
+
+def test_kokoro_without_its_pronunciation_model_reports_unavailable(monkeypatch):
+    """So `auto` falls back instead of choosing a backend that will explode."""
+    import importlib.util
+
+    from pitches_peaches.tts.kokoro import G2P_MODEL, KokoroBackend
+
+    real = importlib.util.find_spec
+    monkeypatch.setattr(
+        importlib.util,
+        "find_spec",
+        lambda name: None if name == G2P_MODEL else real(name),
+    )
+    assert KokoroBackend().available() is False
+
+
+def test_the_pronunciation_model_hint_is_a_url_not_a_package_name():
+    """`uv pip install en_core_web_sm` fails — spaCy models are not on PyPI."""
+    from pitches_peaches.tts.kokoro import G2P_HINT
+
+    assert G2P_HINT.startswith("uv pip install https://")
+    assert G2P_HINT.endswith(".whl")
+
+
+# --------------------------------------------------------------------------
+# Offering to install what audio needs
+# --------------------------------------------------------------------------
+
+
+def test_nothing_is_installed_without_being_asked(monkeypatch):
+    """This writes to the environment the tool runs in. It always asks first."""
+    import importlib
+
+    from pitches_peaches.tts import install as tts_install
+
+    monkeypatch.setattr(importlib.util, "find_spec", lambda name: None)
+    monkeypatch.setattr(tts_install, "_uv", lambda: "/usr/bin/uv")
+
+    def refuse(*args, **kwargs):
+        raise AssertionError("ran an install command without confirming")
+
+    monkeypatch.setattr(tts_install.subprocess, "run", refuse)
+
+    assert tts_install.ensure_pronunciation_model(confirm=lambda q, d: False) is False
+    # ...and a non-interactive run has nobody to ask, so it installs nothing.
+    assert tts_install.ensure_pronunciation_model(confirm=None) is False
+
+
+def test_the_offer_names_the_exact_command(monkeypatch):
+    import importlib
+
+    from pitches_peaches.tts import install as tts_install
+
+    monkeypatch.setattr(importlib.util, "find_spec", lambda name: None)
+    monkeypatch.setattr(tts_install, "_uv", lambda: "/usr/bin/uv")
+    monkeypatch.setattr(tts_install.subprocess, "run", lambda *a, **k: None)
+
+    said: list[str] = []
+    tts_install.ensure_pronunciation_model(
+        confirm=lambda q, d: False, report=said.append
+    )
+    joined = "\n".join(said)
+    assert "en_core_web_sm" in joined
+    assert ".whl" in joined, "the reader can run it by hand, so show the real command"
+
+
+def test_a_failed_install_is_reported_not_swallowed(monkeypatch):
+    import importlib
+    import subprocess
+
+    from pitches_peaches.tts import install as tts_install
+
+    monkeypatch.setattr(importlib.util, "find_spec", lambda name: None)
+    monkeypatch.setattr(tts_install, "_uv", lambda: "/usr/bin/uv")
+    monkeypatch.setattr(
+        tts_install.subprocess,
+        "run",
+        lambda *a, **k: subprocess.CompletedProcess(a[0], 1, "", "no network"),
+    )
+
+    said: list[str] = []
+    ok = tts_install.ensure_pronunciation_model(
+        confirm=lambda q, d: True, report=said.append
+    )
+    assert ok is False
+    assert "install failed" in "\n".join(said)
+    assert "by hand" in "\n".join(said)
+
+
+def test_an_install_that_lies_about_succeeding_is_caught(monkeypatch):
+    """returncode 0 but still not importable must not be reported as success."""
+    import importlib
+    import subprocess
+
+    from pitches_peaches.tts import install as tts_install
+
+    monkeypatch.setattr(importlib.util, "find_spec", lambda name: None)
+    monkeypatch.setattr(tts_install, "_uv", lambda: "/usr/bin/uv")
+    monkeypatch.setattr(
+        tts_install.subprocess,
+        "run",
+        lambda *a, **k: subprocess.CompletedProcess(a[0], 0, "", ""),
+    )
+
+    said: list[str] = []
+    assert tts_install.ensure_pronunciation_model(
+        confirm=lambda q, d: True, report=said.append
+    ) is False
+    assert "still not importable" in "\n".join(said)
+
+
+def test_without_uv_it_says_so_rather_than_guessing_a_python(monkeypatch):
+    import importlib
+
+    from pitches_peaches.tts import install as tts_install
+
+    monkeypatch.setattr(importlib.util, "find_spec", lambda name: None)
+    monkeypatch.setattr(tts_install.shutil, "which", lambda name: None)
+
+    said: list[str] = []
+    assert tts_install.ensure_pronunciation_model(
+        confirm=lambda q, d: True, report=said.append
+    ) is False
+    assert "uv is not on PATH" in "\n".join(said)
+
+
+def test_the_fit_card_is_not_narrated():
+    """A scored table read aloud is "technical, ninety. ownership, ninety-three"."""
+    from pitches_peaches.stages.render import DOCUMENTS, NARRATED
+
+    assert "02-fit.md" not in NARRATED
+    assert set(NARRATED) <= {name for name, _ in DOCUMENTS}
+    assert NARRATED == ("01-company.md", "03-playbook.md")
+
+
+def test_only_the_narrated_documents_cost_a_call(tmp_path, monkeypatch):
+    from pitches_peaches.config import Config
+    from pitches_peaches.stages import render
+
+    class _LLM:
+        def __init__(self):
+            self.config = Config()
+            self.written = []
+
+        def write(self, *, system, content, **kw):
+            self.written.append(content)
+            return "A narration script."
+
+    state = RunState.load_or_create(tmp_path)
+    for name in ("01-company.md", "02-fit.md", "03-playbook.md"):
+        state.write_text(name, f"# {name}\n\nSome prose.")
+
+    monkeypatch.setattr(render.tts_module, "select", lambda name: None)
+    llm = _LLM()
+    render._write_audio(state, llm, lambda _: None)
+
+    assert len(llm.written) == 2, "the fit card must not be sent for narration"
+    assert not (tmp_path / "scripts" / "02-fit.txt").exists()
+    assert (tmp_path / "scripts" / "01-company.txt").exists()
+    assert (tmp_path / "scripts" / "03-playbook.txt").exists()
+
+
+def test_say_does_not_ask_for_a_format_aiff_cannot_hold(monkeypatch):
+    """LEF32 is little-endian float; AIFF is big-endian. macOS writes 0 bytes.
+
+    Found by running it: "Opening output file failed: fmt?", exit 1, and an
+    empty file, on both documents of a real run.
+    """
+    import subprocess as sp
+
+    from pitches_peaches.tts.say import SayBackend
+
+    seen: list[list[str]] = []
+
+    def fake_run(argv, **kw):
+        seen.append(argv)
+        Path(argv[argv.index("-o") + 1]).write_bytes(b"\0" * 64)
+        return sp.CompletedProcess(argv, 0)
+
+    monkeypatch.setattr(SayBackend, "available", lambda self: True)
+    monkeypatch.setattr("pitches_peaches.tts.say.subprocess.run", fake_run)
+    monkeypatch.setattr("pitches_peaches.tts.say.shutil.which", lambda name: None)
+
+    import tempfile
+
+    with tempfile.TemporaryDirectory() as tmp:
+        SayBackend().synthesize("Hello.", Path(tmp) / "out.wav", "Samantha", 178)
+
+    assert not any("--data-format" in part for part in seen[0]), seen[0]
+
+
+# --------------------------------------------------------------------------
+# Compressing what the voice produces
+# --------------------------------------------------------------------------
+
+
+def test_the_best_available_format_is_chosen(monkeypatch):
+    from pitches_peaches.tts import encode
+
+    monkeypatch.setattr(encode.shutil, "which", lambda n: "/bin/" + n)
+    assert encode.available_format() == "mp3"
+
+    monkeypatch.setattr(encode.shutil, "which", lambda n: None if n == "lame" else "/bin/afconvert")
+    assert encode.available_format() == "m4a", "afconvert ships with macOS; no brew needed"
+
+    monkeypatch.setattr(encode.shutil, "which", lambda n: None)
+    assert encode.available_format() == "aiff"
+
+
+def test_with_no_encoder_the_file_is_returned_untouched(tmp_path, monkeypatch):
+    """On Linux this is a no-op rather than a platform check."""
+    from pitches_peaches.tts import encode
+
+    monkeypatch.setattr(encode.shutil, "which", lambda n: None)
+    src = tmp_path / "speech.wav"
+    src.write_bytes(b"RIFF")
+
+    assert encode.compress(src, tmp_path / "speech") == src
+
+
+def test_a_failing_converter_never_loses_the_audio(tmp_path, monkeypatch):
+    """Audio is the most optional thing here; a bigger file beats no file."""
+    from pitches_peaches.tts import encode
+    from pitches_peaches.tts.say import SayBackend
+
+    import subprocess as sp
+
+    def fake_run(argv, **kw):
+        # `say` writes the file; afinfo later asks about it and has no -o.
+        if "-o" in argv:
+            Path(argv[argv.index("-o") + 1]).write_bytes(b"FORM" * 32)
+        return sp.CompletedProcess(argv, 0, "", "")
+
+    monkeypatch.setattr(SayBackend, "available", lambda self: True)
+    monkeypatch.setattr("pitches_peaches.tts.say.subprocess.run", fake_run)
+    monkeypatch.setattr(
+        encode, "compress", lambda src, stem, fmt=None: (_ for _ in ()).throw(encode.EncodeError("no"))
+    )
+
+    result = SayBackend().synthesize("Hello.", tmp_path / "out.wav", "Samantha", 178)
+    assert result.path.exists()
+    assert result.path.suffix == ".aiff"
