@@ -33,19 +33,24 @@ that depends on both lives under `by-cv/<name>/`.
 
 ## The audio
 
-Only [`scripts/02-fit.wav`](by-cv/dana-backend/scripts/02-fit.wav) is here — 6.6
-minutes, kokoro, `af_heart` at 160 wpm. **The other two were too large for
-GitHub**: the company narration is 42 MB and the playbook narration is 108 MB,
-past GitHub's 100 MB per-file limit. One is enough to hear the voice, and the
-scripts are all in `scripts/*.txt`. Pass `--audio` to synthesize them yourself.
+Both narrations are here, kokoro at `af_heart`, 160 wpm:
 
-**This run narrated the fit card; the tool no longer does.** Listening to it is
-why — a scored table becomes "technical, ninety. ownership, ninety-three", and
-the thing that makes the card useful, seeing four scores at once, is exactly
-what a voice cannot do. `--audio` now narrates the company research and the
-playbook only, which is one less model call and six fewer minutes of audio.
-The sample is left here because it is the only one small enough to ship, and
-because hearing why it was dropped is more use than being told.
+| | | |
+|---|---:|---:|
+| [`01-company.mp3`](by-cv/dana-backend/scripts/01-company.mp3) | 14.9 min | 7.1 MB |
+| [`03-playbook.mp3`](by-cv/dana-backend/scripts/03-playbook.mp3) | 39.3 min | 18.9 MB |
+
+They ship as MP3 because they could not ship at all otherwise: the same audio
+is 42 MB and 108 MB as WAV, and the second is past GitHub's 100 MB per-file
+limit. Narration is now compressed with whatever the machine has — `lame` for
+MP3, otherwise `afconvert` for M4A, which comes with macOS.
+
+**The fit card is not narrated, and this example used to show why.** An earlier
+version of this run included it: 6.6 minutes of a scored table read aloud as
+"technical, ninety. ownership, ninety-three". What makes the card useful is
+seeing four scores at once, which is the one thing a voice cannot do, so
+`--audio` now covers the company research and the playbook only. `fit.html` is
+where the card belongs.
 
 ## One honest caveat about the fit points
 

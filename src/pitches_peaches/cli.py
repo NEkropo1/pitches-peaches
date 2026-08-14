@@ -124,10 +124,6 @@ class Ctx:
     application: Application | None = None
     cv: CV | None = None
 
-    @property
-    def in_workspace(self) -> bool:
-        return self.workspace is not None
-
 
 def _cfg(workdir: Path, **overrides) -> Config:
     load_dotenv(workdir)

@@ -28,9 +28,6 @@ import shutil
 import subprocess
 from pathlib import Path
 
-#: Best first. Each entry is (suffix, whether the machine can produce it).
-FORMATS = ("mp3", "m4a", "aiff")
-
 DEFAULT_BITRATE = 64
 #: Speech carries no useful content above ~11 kHz, so this is not a compromise.
 SAMPLE_RATE = 22_050
@@ -56,7 +53,7 @@ def _run(argv: list[str], what: str) -> None:
         raise EncodeError(f"{what} failed: {detail[-1] if detail else 'unknown error'}")
 
 
-def to_wav(src: Path, dest: Path, sample_rate: int = SAMPLE_RATE) -> None:
+def _to_wav(src: Path, dest: Path, sample_rate: int = SAMPLE_RATE) -> None:
     """Downmix to mono 16-bit PCM — plenty for speech, and what lame wants."""
     _run(
         ["afconvert", str(src), "-o", str(dest), "-f", "WAVE",
@@ -65,7 +62,7 @@ def to_wav(src: Path, dest: Path, sample_rate: int = SAMPLE_RATE) -> None:
     )
 
 
-def to_m4a(src: Path, dest: Path, bitrate: int = DEFAULT_BITRATE) -> None:
+def _to_m4a(src: Path, dest: Path, bitrate: int = DEFAULT_BITRATE) -> None:
     _run(
         ["afconvert", str(src), "-o", str(dest), "-f", "m4af", "-d", "aac",
          "-b", str(bitrate * 1000), "--mix"],
@@ -73,13 +70,13 @@ def to_m4a(src: Path, dest: Path, bitrate: int = DEFAULT_BITRATE) -> None:
     )
 
 
-def to_mp3(src: Path, dest: Path, bitrate: int = DEFAULT_BITRATE) -> None:
+def _to_mp3(src: Path, dest: Path, bitrate: int = DEFAULT_BITRATE) -> None:
     """AIFF in, MP3 out. lame wants PCM, so this goes through a temporary WAV."""
     import tempfile
 
     with tempfile.TemporaryDirectory() as tmp:
         wav = Path(tmp) / "speech.wav"
-        to_wav(src, wav)
+        _to_wav(src, wav)
         _run(
             ["lame", "--quiet", "-m", "m", "-b", str(bitrate), "-q", "2",
              str(wav), str(dest)],
@@ -100,9 +97,9 @@ def compress(src: Path, stem: Path, fmt: str | None = None) -> Path:
     dest = stem.with_suffix(f".{fmt}")
     dest.parent.mkdir(parents=True, exist_ok=True)
     if fmt == "mp3":
-        to_mp3(src, dest)
+        _to_mp3(src, dest)
     else:
-        to_m4a(src, dest)
+        _to_m4a(src, dest)
     return dest
 
 

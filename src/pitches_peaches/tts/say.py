@@ -16,7 +16,6 @@ import shutil
 import subprocess
 import sys
 import tempfile
-import wave
 from pathlib import Path
 
 from . import encode
@@ -68,35 +67,9 @@ class SayBackend:
 
         return Result(
             path=out,
-            seconds=encode.duration(out) or _measure(out) or estimate_duration(spoken, rate),
+            seconds=encode.duration(out) or estimate_duration(spoken, rate),
             words=len(strip_pause_markers(spoken).split()),
             backend=self.name,
             voice=voice,
             rate=rate,
         )
-
-
-def _measure(path: Path) -> float | None:
-    """Read the duration back off the file. Measured beats estimated."""
-    if shutil.which("afinfo"):
-        try:
-            output = subprocess.run(
-                ["afinfo", str(path)], capture_output=True, text=True, check=True
-            ).stdout
-            for line in output.splitlines():
-                if "estimated duration" in line:
-                    return float(line.split(":")[1].strip().split()[0])
-        except (subprocess.CalledProcessError, ValueError, IndexError):
-            pass
-    try:
-        with wave.open(str(path)) as handle:
-            return handle.getnframes() / handle.getframerate()
-    except Exception:
-        return None
-
-
-def list_voices() -> list[str]:
-    if shutil.which("say") is None:
-        return []
-    output = subprocess.run(["say", "-v", "?"], capture_output=True, text=True).stdout
-    return [line.split()[0] for line in output.splitlines() if line.strip()]
