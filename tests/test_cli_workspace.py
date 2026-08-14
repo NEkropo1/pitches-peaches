@@ -8,6 +8,8 @@ has to be paid for again.
 from __future__ import annotations
 
 import json
+import os
+import stat
 
 import pytest
 from typer.testing import CliRunner
@@ -322,7 +324,17 @@ def test_start_never_echoes_the_key_it_was_given(tmp_path, monkeypatch):
     env = tmp_path / ".env"
     assert env.exists()
     assert secret in env.read_text(encoding="utf-8"), "but it is stored, which is the point"
-    assert oct(env.stat().st_mode)[-3:] == "600", "readable only by its owner"
+
+    # Windows chmod cannot express owner-only, so the mode is unenforceable
+    # there. What must hold everywhere is that the message matches the file:
+    # promising 0600 on a file that is not 0600 is the failure worth catching.
+    said = " ".join(result.output.split())
+    if stat.S_IMODE(env.stat().st_mode) == 0o600:
+        assert "0600 — readable only by you" in said
+    else:
+        assert os.name == "nt", "0600 failed to take on a platform that supports it"
+        assert "0600" not in said, "claimed a protection the file does not have"
+        assert "as private as" in said
 
 
 def test_start_offers_to_carry_on_rather_than_asking_for_the_posting_again(ws, monkeypatch):

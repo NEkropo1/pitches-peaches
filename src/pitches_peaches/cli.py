@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import os
+import stat
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -240,7 +241,18 @@ def _ensure_key(config_dir: Path) -> bool:
     env.write_text(f"{existing}{provider.env_key}={value}\n", encoding="utf-8")
     env.chmod(0o600)
     os.environ[provider.env_key] = value
-    console.print(f"[green]saved[/green] {provider.env_key} to {env}  [dim](0600)[/dim]")
+
+    # chmod only toggles the read-only bit on Windows; the owner-only mode does
+    # not take. Claiming 0600 there would tell someone their key is protected
+    # when it is only as private as the folder around it, so check and say which.
+    console.print(f"[green]saved[/green] {provider.env_key} to {env}")
+    if stat.S_IMODE(env.stat().st_mode) == 0o600:
+        console.print("[dim]0600 — readable only by you.[/dim]")
+    else:
+        console.print(
+            f"[dim]This system cannot restrict the file itself, so it is as "
+            f"private as {env.parent} is.[/dim]"
+        )
     return True
 
 
