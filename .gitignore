@@ -20,3 +20,6 @@ htmlcov/
 # your CV, and dossiers about jobs you are applying to.
 cvs/
 applications/
+# ...and the config that `peaches init` drops beside them. The repo has no use
+# for one; a workspace does.
+/peaches.toml
