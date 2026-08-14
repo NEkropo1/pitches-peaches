@@ -36,9 +36,16 @@ that depends on both lives under `by-cv/<name>/`.
 Only [`scripts/02-fit.wav`](by-cv/dana-backend/scripts/02-fit.wav) is here — 6.6
 minutes, kokoro, `af_heart` at 160 wpm. **The other two were too large for
 GitHub**: the company narration is 42 MB and the playbook narration is 108 MB,
-past GitHub's 100 MB per-file limit. One is enough to hear what it sounds like,
-and the narration scripts for all three are in `scripts/*.txt`. Pass `--audio`
-to synthesize them yourself.
+past GitHub's 100 MB per-file limit. One is enough to hear the voice, and the
+scripts are all in `scripts/*.txt`. Pass `--audio` to synthesize them yourself.
+
+**This run narrated the fit card; the tool no longer does.** Listening to it is
+why — a scored table becomes "technical, ninety. ownership, ninety-three", and
+the thing that makes the card useful, seeing four scores at once, is exactly
+what a voice cannot do. `--audio` now narrates the company research and the
+playbook only, which is one less model call and six fewer minutes of audio.
+The sample is left here because it is the only one small enough to ship, and
+because hearing why it was dropped is more use than being told.
 
 ## One honest caveat about the fit points
 

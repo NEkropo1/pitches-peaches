@@ -30,6 +30,18 @@ DOCUMENTS = [
     ("03-playbook.md", "What they will ask, and answers at depth"),
 ]
 
+#: Which documents are worth listening to. The fit card is not one of them.
+#:
+#: It is a scored table — four dimensions, a number and a bar each, then quotes
+#: with their sources. Read aloud that is "technical, ninety. ownership,
+#: ninety-three", and the thing that makes it useful on a page, seeing the shape
+#: of four scores at once, is exactly what a voice cannot do. `fit.html` exists
+#: for that. The other two are prose, which is what you can take on a walk.
+#:
+#: Narrating it anyway cost a model call and six and a half minutes of audio
+#: nobody would play twice.
+NARRATED = ("01-company.md", "03-playbook.md")
+
 
 def run(
     state: RunState,
@@ -191,7 +203,7 @@ def _write_audio(
     scripts_dir = Path("scripts")
     scripts: list[tuple[str, str]] = []
 
-    for name, _ in DOCUMENTS:
+    for name in NARRATED:
         if not state.has(name):
             continue
         stem = name.removesuffix(".md")

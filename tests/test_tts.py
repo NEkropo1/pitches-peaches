@@ -281,3 +281,39 @@ def test_without_uv_it_says_so_rather_than_guessing_a_python(monkeypatch):
         confirm=lambda q, d: True, report=said.append
     ) is False
     assert "uv is not on PATH" in "\n".join(said)
+
+
+def test_the_fit_card_is_not_narrated():
+    """A scored table read aloud is "technical, ninety. ownership, ninety-three"."""
+    from pitches_peaches.stages.render import DOCUMENTS, NARRATED
+
+    assert "02-fit.md" not in NARRATED
+    assert set(NARRATED) <= {name for name, _ in DOCUMENTS}
+    assert NARRATED == ("01-company.md", "03-playbook.md")
+
+
+def test_only_the_narrated_documents_cost_a_call(tmp_path, monkeypatch):
+    from pitches_peaches.config import Config
+    from pitches_peaches.stages import render
+
+    class _LLM:
+        def __init__(self):
+            self.config = Config()
+            self.written = []
+
+        def write(self, *, system, content, **kw):
+            self.written.append(content)
+            return "A narration script."
+
+    state = RunState.load_or_create(tmp_path)
+    for name in ("01-company.md", "02-fit.md", "03-playbook.md"):
+        state.write_text(name, f"# {name}\n\nSome prose.")
+
+    monkeypatch.setattr(render.tts_module, "select", lambda name: None)
+    llm = _LLM()
+    render._write_audio(state, llm, lambda _: None)
+
+    assert len(llm.written) == 2, "the fit card must not be sent for narration"
+    assert not (tmp_path / "scripts" / "02-fit.txt").exists()
+    assert (tmp_path / "scripts" / "01-company.txt").exists()
+    assert (tmp_path / "scripts" / "03-playbook.txt").exists()

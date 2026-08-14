@@ -280,8 +280,12 @@ read the answers and decide what you know.
 it is worth listening to:
 
 ```
-Narration is written for the ear and synthesized with kokoro. It costs one more
-model call per document and a few minutes.
+Narrated: 01-company, 03-playbook. Not the fit card — it is a table, and a table
+read aloud is worse than useless.
+Each is rewritten for the ear first — acronyms expanded, tables and links
+removed, pauses marked. That is 2 model calls, and the scripts are kept and reused.
+Turning those scripts into audio is free and local, with kokoro. It takes a few
+minutes per document.
 Render narration audio? [y/N]:
 ```
 

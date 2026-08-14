@@ -597,10 +597,18 @@ def _want_audio(flag: Optional[bool], llm: LLM, interactive: bool) -> Optional[b
         # Two costs, and conflating them is the reason this wording changed:
         # the rewrite is the model call, the voice is free. Somebody reasonably
         # read "synthesized with say — one model call" as paying for the .wav.
+        from .stages.render import NARRATED
+
+        narrated = ", ".join(name.removesuffix(".md") for name in NARRATED)
         console.print(
-            "[dim]Each document is rewritten for the ear first — acronyms "
-            "expanded, tables and links removed, pauses marked. That is one "
-            "model call per document, and the scripts are kept and reused.[/dim]"
+            f"[dim]Narrated: {narrated}. Not the fit card — it is a table, and "
+            "a table read aloud is worse than useless.[/dim]"
+        )
+        console.print(
+            f"[dim]Each is rewritten for the ear first — acronyms expanded, "
+            f"tables and links removed, pauses marked. That is "
+            f"{len(NARRATED)} model calls, and the scripts are kept and "
+            f"reused.[/dim]"
         )
         upgrade = (
             backend.name != "kokoro" and tts.kokoro_is_only_missing_its_model()
