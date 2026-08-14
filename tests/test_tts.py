@@ -1,5 +1,7 @@
 """TTS text normalization — the part that decides whether the audio is listenable."""
 
+from pathlib import Path
+
 import pytest
 
 from pitches_peaches.config import Config
@@ -317,3 +319,32 @@ def test_only_the_narrated_documents_cost_a_call(tmp_path, monkeypatch):
     assert not (tmp_path / "scripts" / "02-fit.txt").exists()
     assert (tmp_path / "scripts" / "01-company.txt").exists()
     assert (tmp_path / "scripts" / "03-playbook.txt").exists()
+
+
+def test_say_does_not_ask_for_a_format_aiff_cannot_hold(monkeypatch):
+    """LEF32 is little-endian float; AIFF is big-endian. macOS writes 0 bytes.
+
+    Found by running it: "Opening output file failed: fmt?", exit 1, and an
+    empty file, on both documents of a real run.
+    """
+    import subprocess as sp
+
+    from pitches_peaches.tts.say import SayBackend
+
+    seen: list[list[str]] = []
+
+    def fake_run(argv, **kw):
+        seen.append(argv)
+        Path(argv[argv.index("-o") + 1]).write_bytes(b"\0" * 64)
+        return sp.CompletedProcess(argv, 0)
+
+    monkeypatch.setattr(SayBackend, "available", lambda self: True)
+    monkeypatch.setattr("pitches_peaches.tts.say.subprocess.run", fake_run)
+    monkeypatch.setattr("pitches_peaches.tts.say.shutil.which", lambda name: None)
+
+    import tempfile
+
+    with tempfile.TemporaryDirectory() as tmp:
+        SayBackend().synthesize("Hello.", Path(tmp) / "out.wav", "Samantha", 178)
+
+    assert not any("--data-format" in part for part in seen[0]), seen[0]

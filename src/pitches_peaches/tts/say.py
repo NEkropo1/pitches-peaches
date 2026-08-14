@@ -39,7 +39,12 @@ class SayBackend:
         out.parent.mkdir(parents=True, exist_ok=True)
 
         subprocess.run(
-            ["say", "-v", voice, "-r", str(rate), "-o", str(out), "--data-format=LEF32@22050"],
+            # No --data-format. LEF32 is little-endian float, AIFF is
+            # big-endian by definition, and macOS rejects the pair with
+            # "Opening output file failed: fmt?" after writing a zero-byte
+            # file. `say -o out.aiff` on its own picks a format that works,
+            # and afinfo reads the duration back off it either way.
+            ["say", "-v", voice, "-r", str(rate), "-o", str(out)],
             input=spoken.encode("utf-8"),
             check=True,
         )

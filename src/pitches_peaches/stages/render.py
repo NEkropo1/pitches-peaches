@@ -50,6 +50,7 @@ def run(
     audio: bool | None = None,
     report: Reporter = lambda _: None,
     confirm: Confirm | None = None,
+    redraw: bool = False,
 ) -> None:
     state.require("recon.json", "match.json")
     recon = state.read_json("recon.json")
@@ -60,7 +61,7 @@ def run(
         playbook = Playbook.model_validate(state.read_json("playbook.json"))
 
     _write_html(state, recon, match, report)
-    _write_diagrams(state, llm, recon, playbook, report)
+    _write_diagrams(state, llm, recon, playbook, report, redraw)
     _write_index(state, recon, match, report)
 
     want_audio = llm.config.audio if audio is None else audio
@@ -86,7 +87,12 @@ def _write_html(state: RunState, recon: dict, match: Match, report: Reporter) ->
 
 
 def _write_diagrams(
-    state: RunState, llm: LLM, recon: dict, playbook: Playbook | None, report: Reporter
+    state: RunState,
+    llm: LLM,
+    recon: dict,
+    playbook: Playbook | None,
+    report: Reporter,
+    force: bool = False,
 ) -> None:
     process = "unknown"
     if playbook and playbook.rounds:
@@ -95,6 +101,13 @@ def _write_diagrams(
         )
     elif recon.get("known_process"):
         process = str(recon["known_process"])
+
+    if state.has("04-diagrams.md") and not force:
+        # The same guard the narration scripts have had all along. Without it,
+        # re-running render to finish an interrupted one — which is exactly
+        # what a person does — pays again for mermaid already on disk.
+        report("diagrams exist, reusing: 04-diagrams.md")
+        return
 
     report("drawing diagrams")
     result = llm.parse(

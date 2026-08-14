@@ -1083,6 +1083,7 @@ def render(
     audio: Optional[bool] = typer.Option(None, "--audio/--no-audio", help="Render narration scripts and synthesize them."),
     tts_backend: Optional[str] = typer.Option(None, "--tts-backend", help="auto|kokoro|say|none"),
     voice: Optional[str] = typer.Option(None, "--voice"),
+    redraw: bool = typer.Option(False, "--redraw", help="Draw the diagrams again instead of reusing them."),
     rate: Optional[int] = typer.Option(None, "--rate", help="Words per minute."),
     model: Optional[str] = ModelOpt,
     provider: Optional[str] = ProviderOpt,
@@ -1107,6 +1108,7 @@ def render(
             audio=audio,
             report=_step,
             confirm=_confirm_with_default,
+            redraw=redraw,
         )
     except (WorkspaceError, StageError, LLMError, providers.ProviderError, PromptError) as exc:
         _fail(exc)
